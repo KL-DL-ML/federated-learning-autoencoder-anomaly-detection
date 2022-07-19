@@ -1,0 +1,17 @@
+dgl 
+flwr
+matplotlib 
+numpy 
+openpyxl 
+pandas 
+plotly
+seaborn
+SciencePlots 
+scikit-learn 
+scipy 
+torch 
+torchinfo
+torchvision
+tqdm 
+xlrd
+xlsxwriter
