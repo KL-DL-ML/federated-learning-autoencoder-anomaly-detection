@@ -1,17 +1,6 @@
-import os
 import numpy as np
-import matplotlib.pyplot as plt
-from codes.parser import *
-from codes.evaluations.spot import SPOT
+from .spot import SPOT
 from sklearn.metrics import roc_auc_score
-
-# Threshold Parameter
-lm_d = {
-        'SKAB': 0.9,
-		'SWaT': 0.993,
-        'ENERGY': 0.995,
-	}
-lm = lm_d[args.dataset]
 
 # Use in main.py
 preds = []
@@ -101,7 +90,7 @@ def pot_eval(init_score, score, label, q=1e-5, level=0.02):
     Returns:
         dict: pot result dict
     """
-    lms = lm
+    lms = 0.995
     while True:
         try:
             s = SPOT(q)  # SPOT object

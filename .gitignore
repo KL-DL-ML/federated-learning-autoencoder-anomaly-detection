@@ -135,3 +135,4 @@ dmypy.json
 .code
 .idea
 .ipynb_checkpoints
+/results

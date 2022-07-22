@@ -1,13 +1,15 @@
 import argparse
 from collections import OrderedDict
-from typing import Callable, Dict, Optional, Tuple
+from typing import Callable, Dict, Optional, Tuple, List
 
 import flwr as fl
+from flwr.common import Metrics
 import numpy as np
 import torch
 
-from utils import *
-from eval_utils import *
+from codes.data_loader import *
+from codes.model_utils import *
+from codes.evaluations.eval_utils import *
 
 # pylint: disable=no-member
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -76,6 +78,22 @@ parser.add_argument(
 parser.add_argument("--pin_memory", action="store_true")
 args = parser.parse_args()
 
+def evaluate_config(rnd: int):
+    """Return evaluation configuration dict for each round.
+    Perform five local evaluation steps on each client (i.e., use five
+    batches) during rounds one to three, then increase to ten local
+    evaluation steps.
+    """
+    val_steps = 5 if rnd < 4 else 10
+    return {"val_steps": val_steps}
+
+def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
+    # Multiply accuracy of each client by number of examples used
+    accuracies = [num_examples * m["accuracy"] for num_examples, m in metrics]
+    examples = [num_examples for num_examples, _ in metrics]
+
+    # Aggregate and return custom metric (weighted average)
+    return {"accuracy": sum(accuracies) / sum(examples)}
 
 def main() -> None:
     """Start server and train five rounds."""
@@ -99,6 +117,8 @@ def main() -> None:
         min_available_clients=args.min_num_clients,
         eval_fn=get_eval_fn(train_loader, test_loader, labels),
         on_fit_config_fn=fit_config,
+        on_evaluate_config_fn=evaluate_config,
+        evaluate_metrics_aggregation_fn=weighted_average
     )
     server = fl.server.Server(client_manager=client_manager, strategy=strategy)
 
@@ -114,7 +134,7 @@ def fit_config(rnd: int) -> Dict[str, fl.common.Scalar]:
     """Return a configuration with static batch size and (local) epochs."""
     config = {
         "epoch_global": str(rnd),
-        "epochs": str(3),
+        "epochs": str(50),
         "batch_size": str(args.batch_size),
         "num_workers": str(args.num_workers),
         "pin_memory": str(args.pin_memory),
@@ -140,7 +160,6 @@ def get_eval_fn(
 ) -> Callable[[fl.common.Weights], Optional[Tuple[float, float]]]:
     def evaluate(weights: fl.common.Weights) -> Optional[Tuple[float, float]]:
         config = {
-            "num_epochs": 5,
             "learning_rate": 0.0001,
             "weight_decay": 1e-6,
             "num_window": 10,
@@ -166,6 +185,8 @@ def get_eval_fn(
         
         accuracy = (result['TP'] + result['TN']) / (result['TP'] + result['TN'] + result['FP'] + result['FN'])
         loss = np.sum(lossFinal)
+        
+        print(result)
         
         print("++++++++> Loss: ", loss)
         print("++++++++> Accuracy: ", accuracy)

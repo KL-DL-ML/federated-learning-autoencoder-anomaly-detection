@@ -8,8 +8,10 @@ import numpy as np
 import torch
 from flwr.common import EvaluateIns, EvaluateRes, FitIns, FitRes, ParametersRes, Weights
 
-from utils import *
-from eval_utils import *
+from codes.data_loader import *
+from codes.model_utils import *
+from codes.evaluations.eval_utils import *
+from codes.plotter import *
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -99,8 +101,8 @@ class Client(fl.client.Client):
         e = self.epoch + 1
         for e in list(range(self.epoch + 1, self.epoch + epochs + 1)):
             lossT, lr = backprop(e, self.model, trainD, trainO, self.optimizer, self.scheduler)
-        
-        # print(f"Client {self.cid}: Loss {np.sum(self.accuracy_list[0])}")
+            self.accuracy_list.append((lossT, lr))
+        plot_accuracies(self.accuracy_list, 'AE_ENERGY')
         
         # Return the refined weights and the number of examples used for training
         weights_prime: Weights = get_weights(self.model)
@@ -142,7 +144,7 @@ class Client(fl.client.Client):
         
         metrics = {"accuracy": float(accuracy)}
         return EvaluateRes(
-            loss=float(loss), num_examples=len(self.testset), metrics=metrics
+            loss=float(np.mean(loss)), num_examples=len(self.testset), metrics=metrics
         )
 
 

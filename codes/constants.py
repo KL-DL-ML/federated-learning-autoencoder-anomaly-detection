@@ -1,5 +1,3 @@
-from codes.parser import *
-
 class color:
     HEADER = '\033[95m'
     BLUE = '\033[94m'

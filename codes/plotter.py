@@ -18,12 +18,12 @@ def smooth(y, box_pts=1):
     return y_smooth
 
 
-def line_plot(name, y_true, y_pred):
+def plot_actual_predicted(name, y_true, y_pred):
     try:
         os.makedirs(os.path.join('plots', name), exist_ok=True)
         # TODO: Add Column Names for Each Plot
         if y_true.shape == y_pred.shape:
-            pdf = PdfPages(f'plots/{name}/output.pdf')
+            pdf = PdfPages(f'plots/{name}/active_v_predicted.pdf')
             for dim in range(y_true.shape[1]):
                 fig, ax = plt.subplots()
                 y_t, y_p = y_true[:, dim], y_pred[:, dim]
@@ -82,6 +82,18 @@ def plot_accuracies(accuracy_list, folder):
     plt.clf()
     plt.close()
     
+
+def plot_losses(accuracy_list, folder):
+    os.makedirs(f'plots/{folder}/', exist_ok=True)
+    trainAcc = [i[0] for i in accuracy_list]
+    plt.xlabel('Epochs')
+    plt.ylabel('Average Training Loss')
+    plt.plot(range(len(trainAcc)), trainAcc, label='Average Training Loss', linewidth=1, linestyle='-', marker='.')
+    plt.twinx()
+    plt.savefig(f'plots/{folder}/loss_graph.pdf')
+    plt.clf()
+    plt.close()
+    
     
 def plot_confusion_matrix(name, matrix):
     os.makedirs(os.path.join('plots', name), exist_ok=True)
@@ -96,10 +108,7 @@ def plot_confusion_matrix(name, matrix):
     ax.yaxis.set_ticklabels(['Anomaly', 'Normal'])
     ax.xaxis.set_ticklabels(['Anomaly', 'Normal'])
     ax.get_figure().savefig(f'plots/{name}/confusion-matrix.png')
-
     
-def plot_training_time():
-    pass
 
 def plotter(name, y_true, y_pred, ascore, labels):
 	os.makedirs(os.path.join('plots', name), exist_ok=True)
@@ -136,3 +145,5 @@ def plot_roc_auc_curve(models, fprs, tprs):
     pdf.savefig(fig)
     plt.close()
     pdf.close()
+
+

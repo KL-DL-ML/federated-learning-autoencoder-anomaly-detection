@@ -21,8 +21,6 @@ models = ['AE', 'LSTM_AD', 'USAD']
 
 def main(dataset):
     results = []
-    fprs = []
-    tprs = []
     for i, model_name in enumerate(models):
         ### Load data and prepare data
         config = get_best_config(model_name)
@@ -48,6 +46,7 @@ def main(dataset):
 
         ### Testing phase
         torch.zero_grad = True
+        
         model.eval()
         with torch.no_grad():
             print(f'{color.HEADER}Testing {model_name} on {dataset}{color.ENDC}')
@@ -63,14 +62,8 @@ def main(dataset):
             labelsFinal = (np.sum(labels, axis=1) >= 1) + 0
             result, pred = pot_eval(lossTfinal, lossFinal, labelsFinal)
             pprint(result)
-            # Calcualte the ROC and AUC curve
-            fpr, tpr, th = roc_curve(labelsFinal, pred)
-            fprs.append(fpr)
-            tprs.append(tpr)
-            print(f'{color.HEADER}ROC AUC: {auc(fpr, tpr):.4f}{color.ENDC}')
             
         results.append({'model': model_name, 'dataset': dataset, 'result': result})
-        model = None
     
     # row = 1
     # workbook = xlsxwriter.Workbook('results/output.xlsx')
@@ -88,9 +81,7 @@ def main(dataset):
     #         worksheet.write(row, i+2, float(result['result'][key]))
     #     row += 1
     # workbook.close()
-        
-    # Plot the ROC curve
-    plot_roc_auc_curve(models, fprs, tprs)
+    
     
     
 if __name__ == '__main__':

@@ -1,14 +1,6 @@
 best_configs = {}
-constant_seed = 42
 num_epochs = 100
-batch_size = 128
-patience = 10
 lr = 1e-3
-gpu = 0
-train_val_pc = 0.25
-
-seed = 42
-constant_std = 0.000001
 
 def get_best_config(algo_name):
     best_configs["USAD"] = {
@@ -22,7 +14,7 @@ def get_best_config(algo_name):
     }
     
     best_configs["AE"] = {
-        "num_epochs": 5,
+        "num_epochs": 10,
         "learning_rate": 0.0001,
         "weight_decay": 1e-5,
         "num_window": 10,

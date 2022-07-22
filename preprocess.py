@@ -3,7 +3,7 @@ import argparse
 import pandas as pd
 import numpy as np
 from scipy.signal import savgol_filter as sg
-from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
 
 datasets = ['ENERGY', 'SWaT']
 
@@ -29,12 +29,16 @@ def normalize2(a, min_a=None, max_a=None):
 
 
 def energy_dataset(dataset, ls):
-    split_rate = 0.60
+    scaler = MinMaxScaler()
+    
+    split_rate = float(args.trainsize / 100)
     train = dataset.loc[:dataset.shape[0] * split_rate - 1]
     test = dataset.loc[dataset.shape[0] * split_rate:]
     train, test = train.values[0:, 1:].astype(float), test.values[0:, 1:].astype(float)
-    train, min_a, max_a = normalize2(train)
-    test, _, _ = normalize2(test, min_a, max_a)
+    
+    train = scaler.fit_transform(train)
+    test = scaler.transform(test)
+    
     ls = ls.values[:, 0].astype(int)
     labels = np.zeros_like(test)
     for i in range(-200, 200):
@@ -56,7 +60,7 @@ def load_data(dataset):
         dataset_folder = 'data/raw/ENERGY'
         ls = pd.read_excel(os.path.join(dataset_folder, 'labels.xlsx'))
         dataset = pd.read_csv(os.path.join(dataset_folder, 'energy_consumption_hourly.csv'))
-        dataset = dataset[:15000]
+        dataset = dataset[:3000]
         # Check if dataset needed to be filtered
         if args.filter:
             dataset = filtering(dataset)
@@ -124,6 +128,12 @@ parser.add_argument('--dataset',
                     required=False,
                     default='ENERGY',
                     help="dataset from ENERGY")
+parser.add_argument('--trainsize',
+                    metavar='-d',
+                    type=int,
+                    required=False,
+                    default=80,
+                    help="percentage of train size of the dataset.")
 parser.add_argument('--filter',
                     action='store_true',
                     help="filter the dataset.")

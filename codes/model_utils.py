@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from tqdm import tqdm
-from codes.constants import *
+from .constants import *
 
 
 def save_model(model, optimizer, scheduler, epoch, accuracy_list):
@@ -27,7 +27,7 @@ def load_model(modelname, dims, config):
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 5, 0.9)
     # fname = f'checkpoints/{args.model}_{args.dataset}/model.ckpt'
     fname = ''
-    if os.path.exists(fname) and (not args.retrain or args.test):
+    if os.path.exists(fname):
         print(f"{color.GREEN}Loading pre-trained model: {model.name}{color.ENDC}")
         checkpoint = torch.load(fname)
         model.load_state_dict(checkpoint['model_state_dict'])

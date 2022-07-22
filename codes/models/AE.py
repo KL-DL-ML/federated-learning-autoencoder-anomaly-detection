@@ -9,7 +9,7 @@ class AE(nn.Module):
         n = feats * self.n_window
         self.encoder = nn.Sequential(
             nn.Linear(n, int(0.75*n)),
-            nn.ReLU(True),
+            nn.ReLU(),
             nn.Linear(int(0.75*n), int(0.5*n)),
             nn.ReLU(),
             nn.Linear(int(0.5*n), int(0.33*n)),
@@ -22,15 +22,15 @@ class AE(nn.Module):
 
         self.decoder = nn.Sequential(
             nn.Linear(int(0.13*n), int(0.25*n)),
-            nn.ReLU(True),
+            nn.ReLU(),
             nn.Linear(int(0.25*n), int(0.33*n)),
-            nn.ReLU(True),
+            nn.ReLU(),
             nn.Linear(int(0.33*n), int(0.5*n)),
-            nn.ReLU(True),
+            nn.ReLU(),
             nn.Linear(int(0.5*n), int(0.75*n)),
-            nn.ReLU(True),
+            nn.ReLU(),
             nn.Linear(int(0.75*n), int(n)),
-            nn.ReLU(True),
+            nn.ReLU(),
         )
         # self.encoder = nn.Sequential(
         #     nn.Linear(n, int(0.75*n)),

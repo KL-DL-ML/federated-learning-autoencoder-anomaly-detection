@@ -1,7 +1,7 @@
-from unittest import result
-from matplotlib.pyplot import plot
 import torch
 import pandas as pd
+import argparse
+
 from tqdm import tqdm
 from time import time
 from codes.evaluations.eval_utils import *
@@ -14,15 +14,36 @@ from codes.data_loader import *
 from config import *
 # End of imports
 
+parser = argparse.ArgumentParser(description='Time-Series Anomaly Detection')
+parser.add_argument('--dataset',
+                    metavar='-d',
+                    type=str,
+                    required=False,
+                    default='ENERGY',
+                    help="dataset from ENERGY")
+parser.add_argument('--model',
+                    metavar='-m',
+                    type=str,
+                    required=False,
+                    default='AE',
+                    help="model name")
+parser.add_argument('--test',
+                    action='store_true',
+                    help="test the model")
+parser.add_argument('--filter',
+                    action='store_true',
+                    help="train with filter dataset")
+parser.add_argument("--pin_memory", action="store_true")
+args = parser.parse_args()
 
-if __name__ == '__main__':
+
+def main():
     early_stopping = EarlyStopping(patience=5, verbose=False)
     # Load Config
     config = get_best_config(args.model)
     # Load Data
-    train_loader, test_loader, labels = load_dataset(args.dataset)
+    train_loader, test_loader, labels = load_dataset(args.dataset, args.filter)
     model, optimizer, scheduler, epoch, accuracy_list = load_model(args.model, labels.shape[1], config)
-    print(model)
     ## Prepare data
     trainD, testD = next(iter(train_loader)), next(iter(test_loader))
     trainO, testO = trainD, testD
@@ -46,6 +67,7 @@ if __name__ == '__main__':
         print(color.BOLD + 'Training time: ' + "{:10.4f}".format(time() - start) + ' s' + color.ENDC)
         save_model(model, optimizer, scheduler, e, accuracy_list)
         plot_accuracies(accuracy_list, f'{args.model}_{args.dataset}')
+        plot_losses(accuracy_list, f'{args.model}_{args.dataset}')
 
     ### Testing phase
     torch.zero_grad = True
@@ -56,8 +78,7 @@ if __name__ == '__main__':
         ### Plot curves
         if not args.test:
             plotter(f'{args.model}_{args.dataset}', testO, y_pred, loss, labels)
-
-        # line_plot(f'{args.model}_{args.dataset}', testO, y_pred)
+        plot_actual_predicted(f'{args.model}_{args.dataset}', testO, y_pred)
         ### Scores
         df = pd.DataFrame()
         lossT, _ = backprop(0, model, trainD, trainO, optimizer, scheduler, training=False)
@@ -75,4 +96,6 @@ if __name__ == '__main__':
     
         cf_matrix = [[result['TP'], result['FP']], [result['FN'], result['TN']]]
         plot_confusion_matrix(f'{args.model}_{args.dataset}', np.asarray(cf_matrix))
-        
+
+if __name__ == '__main__':
+    main()        
