@@ -62,13 +62,6 @@ class Client(fl.client.Client):
         return ParametersRes(parameters=parameters)
 
 
-    def _instantiate_model(self, model_str: str):
-        # will load utils.model_str
-        m = getattr(import_module("utils"), model_str)
-        # instantiate model
-        self.model = m()
-
-
     def fit(self, ins: FitIns) -> FitRes:
         print(f"Client {self.cid}: fit")
         weights: Weights = fl.common.parameters_to_weights(ins.parameters)
@@ -77,21 +70,9 @@ class Client(fl.client.Client):
 
         # Get training config
         epochs = int(config["epochs"])
-        batch_size = int(config["batch_size"])
-        pin_memory = bool(config["pin_memory"])
-        num_workers = int(config["num_workers"])
 
         # Set model parameters
         set_weights(self.model, weights)
-
-        if torch.cuda.is_available():
-            kwargs = {
-                "num_workers": num_workers,
-                "pin_memory": pin_memory,
-                "drop_last": True,
-            }
-        else:
-            kwargs = {"drop_last": True}
         
         trainD, testD = next(iter(self.trainset)), next(iter(self.testset))
         trainO, testO = trainD, testD
@@ -127,24 +108,24 @@ class Client(fl.client.Client):
         if self.model.name == 'AE':
             trainD, testD = convert_to_windows(trainD, self.model), convert_to_windows(testD, self.model)
             
+        loss, _ = backprop(0, self.model, testD, testO, self.optimizer, self.scheduler, training=False)
         lossT, _ = backprop(0, self.model, trainD, trainO, self.optimizer, self.scheduler, training=False)
-        lossTest, _ = backprop(0, self.model, testD, testO, self.optimizer, self.scheduler, training=False)
         
-        lossTfinal, lossFinal = np.mean(lossT, axis=1), np.mean(lossTest, axis=1)
+        lossTfinal, lossFinal = np.mean(lossT, axis=1), np.mean(loss, axis=1)
         labelsFinal = (np.sum(self.labels, axis=1) >= 1) + 0
         
         result, _ = pot_eval(lossTfinal, lossFinal, labelsFinal)
         
         # Return the number of evaluation examples and the evaluation result (loss)
         accuracy = (result['TP'] + result['TN']) / (result['TP'] + result['TN'] + result['FP'] + result['FN'])
-        loss = np.sum(lossFinal)
+        ls = np.sum(lossFinal)
         
-        print(f"=========> Client {self.cid} Loss: {loss}")
+        print(f"=========> Client {self.cid} Loss: {ls}")
         print(f"=========> Client {self.cid} Accuracy: {accuracy}")
         
         metrics = {"accuracy": float(accuracy)}
         return EvaluateRes(
-            loss=float(np.mean(loss)), num_examples=len(self.testset), metrics=metrics
+            loss=float(ls), num_examples=len(self.testset), metrics=metrics
         )
 
 
@@ -183,7 +164,6 @@ def main():
     args = parser.parse_args()
 
     config = {
-        "num_epochs": 5,
         "learning_rate": 0.0001,
         "weight_decay": 1e-6,
         "num_window": 10,
@@ -193,7 +173,7 @@ def main():
     fl.common.logger.configure(f"client_{args.cid}", host=args.log_host)
 
     # load (local, on-device) dataset
-    trainset, testset, labels = load_dataset(args.dataset)
+    trainset, testset, labels = client_load_dataset(args.dataset, args.cid)
 
     # model
     model, optimizer, scheduler, epoch, accuracy_list = load_model(args.model, labels.shape[1], config)

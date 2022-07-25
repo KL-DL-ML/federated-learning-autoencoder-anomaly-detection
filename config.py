@@ -14,7 +14,7 @@ def get_best_config(algo_name):
     }
     
     best_configs["AE"] = {
-        "num_epochs": 10,
+        "num_epochs": 5,
         "learning_rate": 0.0001,
         "weight_decay": 1e-5,
         "num_window": 10,

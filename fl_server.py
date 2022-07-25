@@ -29,27 +29,16 @@ parser.add_argument(
     help="Number of rounds of federated learning (default: 1)",
 )
 parser.add_argument(
-    "--sample_fraction",
-    type=float,
-    default=1.0,
-    help="Fraction of available clients used for fit/evaluate (default: 1.0)",
-)
-parser.add_argument(
     "--min_sample_size",
     type=int,
-    default=2,
+    default=3,
     help="Minimum number of clients used for fit/evaluate (default: 2)",
 )
 parser.add_argument(
     "--min_num_clients",
     type=int,
-    default=2,
+    default=3,
     help="Minimum number of available clients required for sampling (default: 2)",
-)
-parser.add_argument(
-    "--log_host",
-    type=str,
-    help="Logserver address (no default)",
 )
 parser.add_argument(
     "--model",
@@ -64,15 +53,9 @@ parser.add_argument(
     help="dataset to train and test",
 )
 parser.add_argument(
-    "--batch_size",
-    type=int,
-    default=32,
-    help="training batch size",
-)
-parser.add_argument(
     "--num_workers",
     type=int,
-    default=4,
+    default=10,
     help="number of workers for dataset reading",
 )
 parser.add_argument("--pin_memory", action="store_true")
@@ -88,10 +71,10 @@ def evaluate_config(rnd: int):
     return {"val_steps": val_steps}
 
 def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
+    print('=======> Metrics: ', metrics)
     # Multiply accuracy of each client by number of examples used
     accuracies = [num_examples * m["accuracy"] for num_examples, m in metrics]
     examples = [num_examples for num_examples, _ in metrics]
-
     # Aggregate and return custom metric (weighted average)
     return {"accuracy": sum(accuracies) / sum(examples)}
 
@@ -104,21 +87,32 @@ def main() -> None:
     ), f"Num_clients shouldn't be lower than min_sample_size"
 
     # Configure logger
-    fl.common.logger.configure("server", host=args.log_host)
+    fl.common.logger.configure("server")
+    
+    config = {
+        "learning_rate": 0.0001,
+        "weight_decay": 1e-6,
+        "num_window": 10,
+    }
 
     # Load evaluation data
     train_loader, test_loader, labels = load_dataset(args.dataset)
-
+    model, optimizer, scheduler, _, _ = load_model(args.model, labels.shape[1], config)
+    model_weights = [val.cpu().numpy() for _, val in model.state_dict().items()]
+    
     # Create client_manager, strategy, and server
     client_manager = fl.server.SimpleClientManager()
     strategy = fl.server.strategy.FedAvg(
-        fraction_fit=args.sample_fraction,
+        fraction_fit=0.2,
+        fraction_eval=0.2,
         min_fit_clients=args.min_sample_size,
+        min_eval_clients=args.min_sample_size,
         min_available_clients=args.min_num_clients,
-        eval_fn=get_eval_fn(train_loader, test_loader, labels),
+        eval_fn=get_eval_fn(model, optimizer, scheduler, train_loader, test_loader, labels),
         on_fit_config_fn=fit_config,
         on_evaluate_config_fn=evaluate_config,
-        evaluate_metrics_aggregation_fn=weighted_average
+        evaluate_metrics_aggregation_fn=weighted_average,
+        initial_parameters=fl.common.weights_to_parameters(model_weights),
     )
     server = fl.server.Server(client_manager=client_manager, strategy=strategy)
 
@@ -134,8 +128,7 @@ def fit_config(rnd: int) -> Dict[str, fl.common.Scalar]:
     """Return a configuration with static batch size and (local) epochs."""
     config = {
         "epoch_global": str(rnd),
-        "epochs": str(50),
-        "batch_size": str(args.batch_size),
+        "epochs": str(5),
         "num_workers": str(args.num_workers),
         "pin_memory": str(args.pin_memory),
         "model": args.model,
@@ -156,41 +149,33 @@ def set_weights(model: torch.nn.ModuleList, weights: fl.common.Weights) -> None:
 
 
 def get_eval_fn(
-    train, test, labels
+    model, optimizer, scheduler, train, test, labels
 ) -> Callable[[fl.common.Weights], Optional[Tuple[float, float]]]:
     def evaluate(weights: fl.common.Weights) -> Optional[Tuple[float, float]]:
-        config = {
-            "learning_rate": 0.0001,
-            "weight_decay": 1e-6,
-            "num_window": 10,
-        }
-        model, optimizer, scheduler, epoch, accuracy_list = load_model(args.model, labels.shape[1], config)
         set_weights(model, weights); model.to(DEVICE)
         
         trainD, testD = next(iter(train)), next(iter(test))
         trainO, testO = trainD, testD
         
-        torch.zero_grad = True
-        model.eval()
         if model.name == "AE":
             trainD, testD = convert_to_windows(trainD, model), convert_to_windows(testD, model)
     
+        loss, _ = backprop(0, model, testD, testO, optimizer, scheduler, training=False)
         lossT, _ = backprop(0, model, trainD, trainO, optimizer, scheduler, training=False)
-        lossTest, _ = backprop(0, model, testD, testO, optimizer, scheduler, training=False)
         
-        lossTfinal, lossFinal = np.mean(lossT, axis=1), np.mean(lossTest, axis=1)
+        lossTfinal, lossFinal = np.mean(lossT, axis=1), np.mean(loss, axis=1)
         labelsFinal = (np.sum(labels, axis=1) >= 1) + 0
         
         result, _ = pot_eval(lossTfinal, lossFinal, labelsFinal)
         
         accuracy = (result['TP'] + result['TN']) / (result['TP'] + result['TN'] + result['FP'] + result['FN'])
-        loss = np.sum(lossFinal)
+        ls = np.sum(lossFinal)
         
         print(result)
         
-        print("++++++++> Loss: ", loss)
+        print("++++++++> Loss: ", ls)
         print("++++++++> Accuracy: ", accuracy)
-        return np.mean(loss), {"accuracy": accuracy}
+        return ls, {"accuracy": accuracy}
     return evaluate
 
 

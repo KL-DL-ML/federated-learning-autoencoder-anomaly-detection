@@ -41,7 +41,7 @@ def energy_dataset(dataset, ls):
     
     ls = ls.values[:, 0].astype(int)
     labels = np.zeros_like(test)
-    for i in range(-200, 200):
+    for i in range(-250, 250):
         labels[ls + i, :] = 1
     print(train.shape, test.shape, labels.shape)
     return train, test, labels
@@ -60,7 +60,7 @@ def load_data(dataset):
         dataset_folder = 'data/raw/ENERGY'
         ls = pd.read_excel(os.path.join(dataset_folder, 'labels.xlsx'))
         dataset = pd.read_csv(os.path.join(dataset_folder, 'energy_consumption_hourly.csv'))
-        dataset = dataset[:3000]
+        # dataset = dataset[:10000]
         # Check if dataset needed to be filtered
         if args.filter:
             dataset = filtering(dataset)

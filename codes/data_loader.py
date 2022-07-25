@@ -20,6 +20,23 @@ def load_dataset(dataset, filter=True):
     return _train_loader, _test_loader, _labels
 
 
+def client_load_dataset(dataset, cid, filter=True):
+    print(dataset, cid)
+    if filter:
+        folder = os.path.join(f'data/processed/{dataset}/filtered/{cid}')
+    else:
+        folder = os.path.join('data/processed', dataset)
+    if not os.path.exists(folder):
+        raise Exception('Processed Data not found.')
+    loader = []
+    for file in ['train', 'test', 'labels']:
+        loader.append(np.load(os.path.join(folder, f'{file}.npy')))
+    _train_loader = DataLoader(loader[0], batch_size=loader[0].shape[0])
+    _test_loader = DataLoader(loader[1], batch_size=loader[1].shape[0])
+    _labels = loader[2]
+    return _train_loader, _test_loader, _labels
+
+
 def convert_to_windows(data, model):
     windows = []
     w_size = model.n_window
