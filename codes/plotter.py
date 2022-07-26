@@ -109,6 +109,22 @@ def plot_confusion_matrix(name, matrix):
     ax.xaxis.set_ticklabels(['Anomaly', 'Normal'])
     ax.get_figure().savefig(f'plots/{name}/confusion-matrix.png')
     
+    
+def plot_confusion_matrix_fl(folder, title, matrix):
+    os.makedirs(os.path.join('plots', folder), exist_ok=True)
+    group_counts = ['{0:0.0f}'.format(value) for value in matrix.flatten()]
+    group_percentages = ['{0:.2%}'.format(value) for value in matrix.flatten() / np.sum(matrix)]
+    labels = [f'{v1}\n{v2}' for v1, v2 in zip(group_counts, group_percentages)]
+    labels = np.asarray(labels).reshape(matrix.shape)
+    ax = sns.heatmap(matrix, annot=labels, fmt='', cmap='Blues')
+    ax.set_title('Confusion Matrix')
+    ax.set_xlabel('Predicted Values')
+    ax.set_ylabel('Actual Values')
+    ax.yaxis.set_ticklabels(['Anomaly', 'Normal'])
+    ax.xaxis.set_ticklabels(['Anomaly', 'Normal'])
+    ax.get_figure().savefig(f'plots/{folder}/confusion_matrix_{title}.png')
+    plt.close()
+    
 
 def plotter(name, y_true, y_pred, ascore, labels):
 	os.makedirs(os.path.join('plots', name), exist_ok=True)

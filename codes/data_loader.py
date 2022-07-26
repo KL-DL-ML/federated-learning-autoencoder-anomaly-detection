@@ -21,7 +21,6 @@ def load_dataset(dataset, filter=True):
 
 
 def client_load_dataset(dataset, cid, filter=True):
-    print(dataset, cid)
     if filter:
         folder = os.path.join(f'data/processed/{dataset}/filtered/{cid}')
     else:

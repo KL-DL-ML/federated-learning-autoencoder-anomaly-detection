@@ -33,7 +33,6 @@ parser.add_argument('--test',
 parser.add_argument('--filter',
                     action='store_true',
                     help="train with filter dataset")
-parser.add_argument("--pin_memory", action="store_true")
 args = parser.parse_args()
 
 
@@ -43,7 +42,7 @@ def main():
     config = get_best_config(args.model)
     # Load Data
     train_loader, test_loader, labels = load_dataset(args.dataset, args.filter)
-    model, optimizer, scheduler, epoch, accuracy_list = load_model(args.model, labels.shape[1], config)
+    model, optimizer, scheduler, epoch, accuracy_list = load_model(args.model, labels.shape[1], config, args)
     ## Prepare data
     trainD, testD = next(iter(train_loader)), next(iter(test_loader))
     trainO, testO = trainD, testD
@@ -65,7 +64,7 @@ def main():
                 break
             # End Early Stopping
         print(color.BOLD + 'Training time: ' + "{:10.4f}".format(time() - start) + ' s' + color.ENDC)
-        save_model(model, optimizer, scheduler, e, accuracy_list)
+        save_model(model, optimizer, scheduler, e, accuracy_list, args)
         plot_accuracies(accuracy_list, f'{args.model}_{args.dataset}')
         plot_losses(accuracy_list, f'{args.model}_{args.dataset}')
 
@@ -93,9 +92,10 @@ def main():
         
         result, _ = pot_eval(lossTfinal, lossFinal, labelsFinal)
         pprint(result)
+        print(np.sum(loss))
     
         cf_matrix = [[result['TP'], result['FP']], [result['FN'], result['TN']]]
-        plot_confusion_matrix(f'{args.model}_{args.dataset}', np.asarray(cf_matrix))
+        plot_confusion_matrix_fl(f'{args.model}_{args.dataset}', 'server', np.asarray(cf_matrix))
 
 if __name__ == '__main__':
     main()        

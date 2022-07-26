@@ -6,40 +6,46 @@ from tqdm import tqdm
 from .constants import *
 
 
-def save_model(model, optimizer, scheduler, epoch, accuracy_list):
-    pass
-    # folder = f'checkpoints/{args.model}_{args.dataset}/'
-    # os.makedirs(folder, exist_ok=True)
-    # file_path = f'{folder}/model.ckpt'
-    # torch.save({
-    #     'epoch': epoch,
-    #     'model_state_dict': model.state_dict(),
-    #     'optimizer_state_dict': optimizer.state_dict(),
-    #     'scheduler_state_dict': scheduler.state_dict(),
-    #     'accuracy_list': accuracy_list}, file_path)
+def save_model(model, optimizer, scheduler, epoch, accuracy_list, args = None):
+    try:
+        folder = f'checkpoints/{args.model}_{args.dataset}/'
+        os.makedirs(folder, exist_ok=True)
+        file_path = f'{folder}/model.ckpt'
+        torch.save({
+            'epoch': epoch,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'scheduler_state_dict': scheduler.state_dict(),
+            'accuracy_list': accuracy_list}, file_path)
+    except:
+        pass
 
 
-def load_model(modelname, dims, config):
-    import codes.models
-    model_class = getattr(codes.models, modelname)
-    model = model_class(dims, config).double()
-    optimizer = torch.optim.AdamW(model.parameters(), lr=config['learning_rate'], weight_decay=config['weight_decay'])
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 5, 0.9)
-    # fname = f'checkpoints/{args.model}_{args.dataset}/model.ckpt'
-    fname = ''
-    if os.path.exists(fname):
-        print(f"{color.GREEN}Loading pre-trained model: {model.name}{color.ENDC}")
-        checkpoint = torch.load(fname)
-        model.load_state_dict(checkpoint['model_state_dict'])
-        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-        epoch = checkpoint['epoch']
-        accuracy_list = checkpoint['accuracy_list']
-    else:
-        print(f"{color.GREEN}Creating new model: {model.name}{color.ENDC}")
+def load_model(modelname, dims, config, args = None):
+    try:
+        import codes.models
+        model_class = getattr(codes.models, modelname)
+        model = model_class(dims, config).double()
+        optimizer = torch.optim.AdamW(model.parameters(), lr=config['learning_rate'], weight_decay=config['weight_decay'])
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 5, 0.9)
+        fname = f'checkpoints/{args.model}_{args.dataset}/model.ckpt'
+        if os.path.exists(fname):
+            print(f"{color.GREEN}Loading pre-trained model: {model.name}{color.ENDC}")
+            checkpoint = torch.load(fname)
+            model.load_state_dict(checkpoint['model_state_dict'])
+            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+            epoch = checkpoint['epoch']
+            accuracy_list = checkpoint['accuracy_list']
+        else:
+            print(f"{color.GREEN}Creating new model: {model.name}{color.ENDC}")
+            epoch = -1
+            accuracy_list = []
+        return model, optimizer, scheduler, epoch, accuracy_list
+    except:
         epoch = -1
         accuracy_list = []
-    return model, optimizer, scheduler, epoch, accuracy_list
+        return model, optimizer, scheduler, epoch, accuracy_list
 
 
 def backprop(epoch, model, data, dataO, optimizer, scheduler, training=True):
@@ -140,6 +146,33 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, training=True):
         else:
             return loss.detach().numpy(), y_pred.detach().numpy()
         
+        
+
+def backprop_fl(epoch, cid, model, data, dataO, optimizer, scheduler, training=True):
+    feats = dataO.shape[1]
+    l = nn.MSELoss(reduction = 'none')
+    l1s = []
+    if training:
+        for _, d in enumerate(data):
+            x = model(d)
+            loss = torch.mean(l(x, d))
+            l1s.append(torch.mean(loss).item())
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+        scheduler.step()
+        tqdm.write(f'Client {cid}, Epoch {epoch + 1},\tMSE = {np.mean(l1s)}')
+        return np.mean(l1s), optimizer.param_groups[0]['lr']
+    else:
+        xs = []
+        for d in data: 
+            x = model(d)
+            xs.append(x)
+        xs = torch.stack(xs)
+        y_pred = xs[:, data.shape[1]-feats:data.shape[1]].view(-1, feats)
+        loss = l(xs, data)
+        loss = loss[:, data.shape[1]-feats:data.shape[1]].view(-1, feats)
+        return loss.detach().numpy(), y_pred.detach().numpy()  
 
 
   

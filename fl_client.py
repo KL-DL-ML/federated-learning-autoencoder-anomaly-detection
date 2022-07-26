@@ -1,9 +1,11 @@
 import argparse
+from pprint import pprint
 import timeit
 from collections import OrderedDict
 from importlib import import_module
 
 import flwr as fl
+from matplotlib.pyplot import plot
 import numpy as np
 import torch
 from flwr.common import EvaluateIns, EvaluateRes, FitIns, FitRes, ParametersRes, Weights
@@ -60,7 +62,7 @@ class Client(fl.client.Client):
         weights: Weights = get_weights(self.model)
         parameters = fl.common.weights_to_parameters(weights)
         return ParametersRes(parameters=parameters)
-
+    
 
     def fit(self, ins: FitIns) -> FitRes:
         print(f"Client {self.cid}: fit")
@@ -81,7 +83,7 @@ class Client(fl.client.Client):
         # Train model
         e = self.epoch + 1
         for e in list(range(self.epoch + 1, self.epoch + epochs + 1)):
-            lossT, lr = backprop(e, self.model, trainD, trainO, self.optimizer, self.scheduler)
+            lossT, lr = backprop_fl(e, self.cid, self.model, trainD, trainO, self.optimizer, self.scheduler)
             self.accuracy_list.append((lossT, lr))
         plot_accuracies(self.accuracy_list, 'AE_ENERGY')
         
@@ -108,22 +110,41 @@ class Client(fl.client.Client):
         if self.model.name == 'AE':
             trainD, testD = convert_to_windows(trainD, self.model), convert_to_windows(testD, self.model)
             
-        loss, _ = backprop(0, self.model, testD, testO, self.optimizer, self.scheduler, training=False)
-        lossT, _ = backprop(0, self.model, trainD, trainO, self.optimizer, self.scheduler, training=False)
+        loss, _ = backprop_fl(0, self.cid, self.model, testD, testO, self.optimizer, self.scheduler, training=False)
+        lossT, _ = backprop_fl(0, self.cid, self.model, trainD, trainO, self.optimizer, self.scheduler, training=False)
         
         lossTfinal, lossFinal = np.mean(lossT, axis=1), np.mean(loss, axis=1)
         labelsFinal = (np.sum(self.labels, axis=1) >= 1) + 0
         
+        ls = np.sum(lossFinal)
         result, _ = pot_eval(lossTfinal, lossFinal, labelsFinal)
         
         # Return the number of evaluation examples and the evaluation result (loss)
-        accuracy = (result['TP'] + result['TN']) / (result['TP'] + result['TN'] + result['FP'] + result['FN'])
-        ls = np.sum(lossFinal)
+        TP = float(result['TP'])
+        TN = float(result['TN'])
+        FP = float(result['FP'])
+        FN = float(result['FN'])
         
-        print(f"=========> Client {self.cid} Loss: {ls}")
-        print(f"=========> Client {self.cid} Accuracy: {accuracy}")
+        # cf_matrix = [[TP, FP], [FN, TN]]
+        # plot_confusion_matrix_fl('AE_ENERGY', self.cid, np.asarray(cf_matrix))
         
-        metrics = {"accuracy": float(accuracy)}
+        TPR = round((TP / (TP + FN)), 6)
+        FPR = round((FP / (FP + TN)), 6)
+        
+        accuracy = (TP + TN) / (TP + TN + FP + FN)
+        print('==========================================================')
+        print('Client {}'.format(self.cid))
+        print('Acc: %.3f%% \nPrecision: %.3f \nRecall: %.3f \nF1score: %.3f \nTPR: %.5f \nFPR: %.5f'%(accuracy*100, 
+                                                                                                      result['precision'], 
+                                                                                                      result['recall'], 
+                                                                                                      result['f1'], 
+                                                                                                      TPR, 
+                                                                                                      FPR))
+        print('==========================================================')
+        # print(f"=========> Client {self.cid} Loss: {ls}")
+        # print(f"=========> Client {self.cid} Accuracy: {accuracy}")
+        
+        metrics = {"accuracy": float(accuracy), "f1": float(result['f1'])}
         return EvaluateRes(
             loss=float(ls), num_examples=len(self.testset), metrics=metrics
         )

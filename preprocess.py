@@ -11,21 +11,12 @@ def filtering(dataset):
     try:
         for column in dataset.columns:
             try:
-                dataset[column] = sg(dataset[column], window_length=9, polyorder=5)
+                dataset[column] = sg(dataset[column], window_length=15, polyorder=5)
             except Exception as e:
                 print(e)
         return dataset
     except:
         print('Error in filtering dataframe.')
-
-def normalize(a, min_a=None, max_a=None):
-    if min_a is None: min_a, max_a = min(a), max(a)
-    return (a - min_a) / (max_a - min_a), min_a, max_a
-
-
-def normalize2(a, min_a=None, max_a=None):
-    if min_a is None: min_a, max_a = np.min(a, axis=0), np.max(a, axis=0)
-    return (a - min_a) / (max_a - min_a + 0.0001), min_a, max_a
 
 
 def energy_dataset(dataset, ls):
@@ -47,8 +38,9 @@ def energy_dataset(dataset, ls):
     return train, test, labels
 
 def swat_dataset(df_train, df_test, labels):
-    train, min_a, max_a = normalize(df_train.values)
-    test, _, _ = normalize(df_test.values, min_a, max_a)
+    scaler = MinMaxScaler()
+    train = scaler.fit_transform(df_train.values)
+    test = scaler.transform(df_test.values)
     print(train.shape, test.shape, labels.shape)
     return train, test, labels
 
@@ -60,7 +52,7 @@ def load_data(dataset):
         dataset_folder = 'data/raw/ENERGY'
         ls = pd.read_excel(os.path.join(dataset_folder, 'labels.xlsx'))
         dataset = pd.read_csv(os.path.join(dataset_folder, 'energy_consumption_hourly.csv'))
-        # dataset = dataset[:10000]
+        dataset = dataset[:12000]
         # Check if dataset needed to be filtered
         if args.filter:
             dataset = filtering(dataset)

@@ -1,5 +1,6 @@
 import argparse
 from collections import OrderedDict
+from pprint import pprint
 from typing import Callable, Dict, Optional, Tuple, List
 
 import flwr as fl
@@ -71,7 +72,6 @@ def evaluate_config(rnd: int):
     return {"val_steps": val_steps}
 
 def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
-    print('=======> Metrics: ', metrics)
     # Multiply accuracy of each client by number of examples used
     accuracies = [num_examples * m["accuracy"] for num_examples, m in metrics]
     examples = [num_examples for num_examples, _ in metrics]
@@ -100,15 +100,23 @@ def main() -> None:
     model, optimizer, scheduler, _, _ = load_model(args.model, labels.shape[1], config)
     model_weights = [val.cpu().numpy() for _, val in model.state_dict().items()]
     
+    trainD, testD = next(iter(train_loader)), next(iter(test_loader))
+    trainO, testO = trainD, testD
+    
+    print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ WORKING ONLY ONCE")
+    
+    if model.name == "AE":
+        trainD, testD = convert_to_windows(trainD, model), convert_to_windows(testD, model)
+    
     # Create client_manager, strategy, and server
     client_manager = fl.server.SimpleClientManager()
     strategy = fl.server.strategy.FedAvg(
-        fraction_fit=0.2,
-        fraction_eval=0.2,
+        fraction_fit=0.5,
+        fraction_eval=0.5,
         min_fit_clients=args.min_sample_size,
         min_eval_clients=args.min_sample_size,
         min_available_clients=args.min_num_clients,
-        eval_fn=get_eval_fn(model, optimizer, scheduler, train_loader, test_loader, labels),
+        eval_fn=get_eval_fn(model, optimizer, scheduler, trainD, testD, trainO, testO, labels),
         on_fit_config_fn=fit_config,
         on_evaluate_config_fn=evaluate_config,
         evaluate_metrics_aggregation_fn=weighted_average,
@@ -149,29 +157,37 @@ def set_weights(model: torch.nn.ModuleList, weights: fl.common.Weights) -> None:
 
 
 def get_eval_fn(
-    model, optimizer, scheduler, train, test, labels
+    model, optimizer, scheduler, trainD, testD, trainO, testO, labels
 ) -> Callable[[fl.common.Weights], Optional[Tuple[float, float]]]:
     def evaluate(weights: fl.common.Weights) -> Optional[Tuple[float, float]]:
         set_weights(model, weights); model.to(DEVICE)
-        
-        trainD, testD = next(iter(train)), next(iter(test))
-        trainO, testO = trainD, testD
-        
-        if model.name == "AE":
-            trainD, testD = convert_to_windows(trainD, model), convert_to_windows(testD, model)
-    
         loss, _ = backprop(0, model, testD, testO, optimizer, scheduler, training=False)
         lossT, _ = backprop(0, model, trainD, trainO, optimizer, scheduler, training=False)
         
         lossTfinal, lossFinal = np.mean(lossT, axis=1), np.mean(loss, axis=1)
         labelsFinal = (np.sum(labels, axis=1) >= 1) + 0
         
+        ls = np.sum(lossFinal)
         result, _ = pot_eval(lossTfinal, lossFinal, labelsFinal)
         
-        accuracy = (result['TP'] + result['TN']) / (result['TP'] + result['TN'] + result['FP'] + result['FN'])
-        ls = np.sum(lossFinal)
+        TP = float(result['TP'])
+        TN = float(result['TN'])
+        FP = float(result['FP'])
+        FN = float(result['FN'])
         
-        print(result)
+        # cf_matrix = [[TP, FP], [FN, TN]]
+        # plot_confusion_matrix_fl('AE_ENERGY', self.cid, np.asarray(cf_matrix))
+        
+        TPR = round((TP / (TP + FN)), 6)
+        FPR = round((FP / (FP + TN)), 6)
+        
+        accuracy = (TP + TN) / (TP + TN + FP + FN)
+        print('Acc: %.3f%% \nPrecision: %.3f \nRecall: %.3f \nF1score: %.3f \nTPR: %.5f \nFPR: %.5f'%(accuracy*100, 
+                                                                                                      result['precision'], 
+                                                                                                      result['recall'], 
+                                                                                                      result['f1'], 
+                                                                                                      TPR, 
+                                                                                                      FPR))
         
         print("++++++++> Loss: ", ls)
         print("++++++++> Accuracy: ", accuracy)
