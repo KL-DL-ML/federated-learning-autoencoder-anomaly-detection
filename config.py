@@ -4,8 +4,7 @@ lr = 1e-3
 
 def get_best_config(algo_name):
     best_configs["USAD"] = {
-        "batch_size": 50,
-        "num_epochs": 5,
+        "num_epochs": 15,
         "num_hidden": 16,
         "latent": 5,
         "learning_rate": 0.0001,
@@ -14,7 +13,7 @@ def get_best_config(algo_name):
     }
     
     best_configs["AE"] = {
-        "num_epochs": 5,
+        "num_epochs": 15,
         "learning_rate": 0.0001,
         "weight_decay": 1e-5,
         "num_window": 10,

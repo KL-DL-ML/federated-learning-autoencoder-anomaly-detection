@@ -13,19 +13,18 @@ from codes.model_utils import *
 from codes.data_loader import *
 from config import *
 # End of imports
-from sklearn.metrics import roc_curve, auc
 
 datasets = ['ENERGY', 'SWaT']
-models = ['AE', 'LSTM_AD', 'USAD']
+models = ['USAD']
 
 
-def main(dataset):
+def main(dataset, filter = True):
     results = []
     for i, model_name in enumerate(models):
         ### Load data and prepare data
         config = get_best_config(model_name)
-        train_loader, test_loader, labels = load_dataset(dataset)
-        model, optimizer, scheduler, epoch, accuracy_list = load_model(model_name, labels.shape[1], config)
+        train_loader, test_loader, labels = load_dataset(dataset, filter)
+        model, optimizer, scheduler, epoch, accuracy_list = load_model(model_name, labels.shape[1], config, None)
         trainD, testD = next(iter(train_loader)), next(iter(test_loader))
         trainO, testO = trainD, testD
         if model_name in ['USAD', 'AE']:
@@ -36,13 +35,16 @@ def main(dataset):
         num_epochs = config['num_epochs']
         e = epoch + 1
         start = time()
+        losses = []
         for e in tqdm(list(range(epoch + 1, epoch + num_epochs + 1))):
             lossT, lr = backprop(e, model, trainD, trainO, optimizer, scheduler)
             accuracy_list.append((lossT, lr))
+            losses.append(lossT)
         training_time = time() - start
         print(f'{color.HEADER}Training {model_name} on {dataset} finished in {training_time:.2f} seconds{color.ENDC}')
         
         # summary(model)
+        print(np.mean(losses))
 
         ### Testing phase
         torch.zero_grad = True
@@ -65,26 +67,26 @@ def main(dataset):
             
         results.append({'model': model_name, 'dataset': dataset, 'result': result})
     
-    # row = 1
-    # workbook = xlsxwriter.Workbook('results/output.xlsx')
-    # worksheet = workbook.add_worksheet()
-    # ### Add Columns
-    # worksheet.write(0, 0, 'Model')
-    # worksheet.write(0, 1, 'Dataset')
-    # for i, key in enumerate(result):
-    #     worksheet.write(0, i+2, key)
+    row = 1
+    workbook = xlsxwriter.Workbook('results/output.xlsx')
+    worksheet = workbook.add_worksheet()
+    ### Add Columns
+    worksheet.write(0, 0, 'Model')
+    worksheet.write(0, 1, 'Dataset')
+    for i, key in enumerate(result):
+        worksheet.write(0, i+2, key)
         
-    # for result in results:
-    #     worksheet.write(row, 0, result['model'])
-    #     worksheet.write(row, 1, result['dataset'])
-    #     for i, key in enumerate(result['result']):
-    #         worksheet.write(row, i+2, float(result['result'][key]))
-    #     row += 1
-    # workbook.close()
+    for result in results:
+        worksheet.write(row, 0, result['model'])
+        worksheet.write(row, 1, result['dataset'])
+        for i, key in enumerate(result['result']):
+            worksheet.write(row, i+2, float(result['result'][key]))
+        row += 1
+    workbook.close()
     
     
     
 if __name__ == '__main__':
     os.makedirs('results', exist_ok=True)
-    main('ENERGY/filtered')
+    main('ENERGY', filter=False)
     

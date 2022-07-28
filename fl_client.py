@@ -2,10 +2,9 @@ import argparse
 from pprint import pprint
 import timeit
 from collections import OrderedDict
-from importlib import import_module
+from time import time
 
 import flwr as fl
-from matplotlib.pyplot import plot
 import numpy as np
 import torch
 from flwr.common import EvaluateIns, EvaluateRes, FitIns, FitRes, ParametersRes, Weights
@@ -82,10 +81,12 @@ class Client(fl.client.Client):
             trainD, testD = convert_to_windows(trainD, self.model), convert_to_windows(testD, self.model)
         # Train model
         e = self.epoch + 1
+        start = time()
         for e in list(range(self.epoch + 1, self.epoch + epochs + 1)):
             lossT, lr = backprop_fl(e, self.cid, self.model, trainD, trainO, self.optimizer, self.scheduler)
             self.accuracy_list.append((lossT, lr))
-        plot_accuracies(self.accuracy_list, 'AE_ENERGY')
+        # plot_accuracies(self.accuracy_list, 'AE_ENERGY')
+        # print(color.BOLD + 'Training time: ' + "{:10.4f}".format(time() - start) + ' s' + color.ENDC)
         
         # Return the refined weights and the number of examples used for training
         weights_prime: Weights = get_weights(self.model)
@@ -116,7 +117,7 @@ class Client(fl.client.Client):
         lossTfinal, lossFinal = np.mean(lossT, axis=1), np.mean(loss, axis=1)
         labelsFinal = (np.sum(self.labels, axis=1) >= 1) + 0
         
-        ls = np.sum(lossFinal)
+        ls = np.mean(lossFinal)
         result, _ = pot_eval(lossTfinal, lossFinal, labelsFinal)
         
         # Return the number of evaluation examples and the evaluation result (loss)
@@ -132,15 +133,15 @@ class Client(fl.client.Client):
         FPR = round((FP / (FP + TN)), 6)
         
         accuracy = (TP + TN) / (TP + TN + FP + FN)
-        print('==========================================================')
-        print('Client {}'.format(self.cid))
-        print('Acc: %.3f%% \nPrecision: %.3f \nRecall: %.3f \nF1score: %.3f \nTPR: %.5f \nFPR: %.5f'%(accuracy*100, 
-                                                                                                      result['precision'], 
-                                                                                                      result['recall'], 
-                                                                                                      result['f1'], 
-                                                                                                      TPR, 
-                                                                                                      FPR))
-        print('==========================================================')
+        # print('==========================================================')
+        # print('Client {}'.format(self.cid))
+        # print('Acc: %.6f%% \nPrecision: %.6f \nRecall: %.6f \nF1score: %.6f \nTPR: %.6f \nFPR: %.6f'%(accuracy*100, 
+        #                                                                                               result['precision'], 
+        #                                                                                               result['recall'], 
+        #                                                                                               result['f1'], 
+        #                                                                                               TPR, 
+        #                                                                                               FPR))
+        # print('==========================================================')
         # print(f"=========> Client {self.cid} Loss: {ls}")
         # print(f"=========> Client {self.cid} Accuracy: {accuracy}")
         

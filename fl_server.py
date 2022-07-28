@@ -7,6 +7,7 @@ import flwr as fl
 from flwr.common import Metrics
 import numpy as np
 import torch
+from time import time
 
 from codes.data_loader import *
 from codes.model_utils import *
@@ -26,19 +27,19 @@ parser.add_argument(
 parser.add_argument(
     "--rounds",
     type=int,
-    default=5,
+    default=2,
     help="Number of rounds of federated learning (default: 1)",
 )
 parser.add_argument(
     "--min_sample_size",
     type=int,
-    default=3,
+    default=2,
     help="Minimum number of clients used for fit/evaluate (default: 2)",
 )
 parser.add_argument(
     "--min_num_clients",
     type=int,
-    default=3,
+    default=2,
     help="Minimum number of available clients required for sampling (default: 2)",
 )
 parser.add_argument(
@@ -56,7 +57,7 @@ parser.add_argument(
 parser.add_argument(
     "--num_workers",
     type=int,
-    default=10,
+    default=4,
     help="number of workers for dataset reading",
 )
 parser.add_argument("--pin_memory", action="store_true")
@@ -81,6 +82,8 @@ def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
 def main() -> None:
     """Start server and train five rounds."""
     print(args)
+    
+    start = time()
 
     assert (
         args.min_sample_size <= args.min_num_clients
@@ -96,14 +99,12 @@ def main() -> None:
     }
 
     # Load evaluation data
-    train_loader, test_loader, labels = load_dataset(args.dataset)
+    train_loader, test_loader, labels = load_dataset(args.dataset, filter=False)
     model, optimizer, scheduler, _, _ = load_model(args.model, labels.shape[1], config)
     model_weights = [val.cpu().numpy() for _, val in model.state_dict().items()]
     
     trainD, testD = next(iter(train_loader)), next(iter(test_loader))
     trainO, testO = trainD, testD
-    
-    print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ WORKING ONLY ONCE")
     
     if model.name == "AE":
         trainD, testD = convert_to_windows(trainD, model), convert_to_windows(testD, model)
@@ -111,15 +112,14 @@ def main() -> None:
     # Create client_manager, strategy, and server
     client_manager = fl.server.SimpleClientManager()
     strategy = fl.server.strategy.FedAvg(
-        fraction_fit=0.5,
-        fraction_eval=0.5,
+        fraction_fit=1,
+        fraction_eval=1,
         min_fit_clients=args.min_sample_size,
         min_eval_clients=args.min_sample_size,
         min_available_clients=args.min_num_clients,
         eval_fn=get_eval_fn(model, optimizer, scheduler, trainD, testD, trainO, testO, labels),
         on_fit_config_fn=fit_config,
-        on_evaluate_config_fn=evaluate_config,
-        evaluate_metrics_aggregation_fn=weighted_average,
+        # on_evaluate_config_fn=evaluate_config,
         initial_parameters=fl.common.weights_to_parameters(model_weights),
     )
     server = fl.server.Server(client_manager=client_manager, strategy=strategy)
@@ -130,13 +130,31 @@ def main() -> None:
         server=server,
         config={"num_rounds": args.rounds},
     )
+    
+    print(color.BOLD + 'Training time: ' + "{:10.4f}".format(time() - start) + ' s' + color.ENDC)
+    print('Saving Model')
+    save_model(model, optimizer, scheduler)
 
+def save_model(model, optimizer, scheduler):
+    try:
+        folder = f'checkpoints/FL_{args.model}_{args.dataset}/'
+        os.makedirs(folder, exist_ok=True)
+        file_path = f'{folder}/model.ckpt'
+        torch.save(
+            {
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'scheduler_state_dict': scheduler.state_dict()
+            }, file_path)
+    except:
+        print('Cannot save model')
+    
 
 def fit_config(rnd: int) -> Dict[str, fl.common.Scalar]:
     """Return a configuration with static batch size and (local) epochs."""
     config = {
         "epoch_global": str(rnd),
-        "epochs": str(5),
+        "epochs": str(10),
         "num_workers": str(args.num_workers),
         "pin_memory": str(args.pin_memory),
         "model": args.model,
@@ -160,14 +178,14 @@ def get_eval_fn(
     model, optimizer, scheduler, trainD, testD, trainO, testO, labels
 ) -> Callable[[fl.common.Weights], Optional[Tuple[float, float]]]:
     def evaluate(weights: fl.common.Weights) -> Optional[Tuple[float, float]]:
-        set_weights(model, weights); model.to(DEVICE)
+        set_weights(model, weights)
         loss, _ = backprop(0, model, testD, testO, optimizer, scheduler, training=False)
         lossT, _ = backprop(0, model, trainD, trainO, optimizer, scheduler, training=False)
         
         lossTfinal, lossFinal = np.mean(lossT, axis=1), np.mean(loss, axis=1)
         labelsFinal = (np.sum(labels, axis=1) >= 1) + 0
         
-        ls = np.sum(lossFinal)
+        ls = np.mean(lossFinal)
         result, _ = pot_eval(lossTfinal, lossFinal, labelsFinal)
         
         TP = float(result['TP'])
@@ -182,13 +200,13 @@ def get_eval_fn(
         FPR = round((FP / (FP + TN)), 6)
         
         accuracy = (TP + TN) / (TP + TN + FP + FN)
-        print('Acc: %.3f%% \nPrecision: %.3f \nRecall: %.3f \nF1score: %.3f \nTPR: %.5f \nFPR: %.5f'%(accuracy*100, 
-                                                                                                      result['precision'], 
-                                                                                                      result['recall'], 
-                                                                                                      result['f1'], 
-                                                                                                      TPR, 
-                                                                                                      FPR))
-        
+        # print('Acc: %.6f%% \nPrecision: %.6f \nRecall: %.6f \nF1score: %.6f \nTPR: %.6f \nFPR: %.6f'%(accuracy*100, 
+        #                                                                                               result['precision'], 
+        #                                                                                               result['recall'], 
+        #                                                                                               result['f1'], 
+        #                                                                                               TPR, 
+        #                                                                                               FPR))
+        pprint(result)
         print("++++++++> Loss: ", ls)
         print("++++++++> Accuracy: ", accuracy)
         return ls, {"accuracy": accuracy}

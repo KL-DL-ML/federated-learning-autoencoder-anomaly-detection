@@ -104,7 +104,7 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, training=True):
 def main():
     preds = []
     config = {
-        "num_epochs": 5,
+        "num_epochs": 15,
         "learning_rate": 0.0001,
         "weight_decay": 1e-5,
         "num_window": 10,
