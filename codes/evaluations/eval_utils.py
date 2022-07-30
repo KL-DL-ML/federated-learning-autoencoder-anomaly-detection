@@ -1,6 +1,6 @@
 import numpy as np
 from .spot import SPOT
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, roc_curve
 
 # Use in main.py
 preds = []
@@ -75,8 +75,7 @@ def adjust_predicts(score, label,
     else:
         return predict
 
-
-def pot_eval(init_score, score, label, q=1e-5, level=0.02):
+def pot_eval(init_score, score, label, q=1e-10, level=0.02):
     """
     Run POT method on given score.
     Args:

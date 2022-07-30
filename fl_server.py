@@ -27,7 +27,7 @@ parser.add_argument(
 parser.add_argument(
     "--rounds",
     type=int,
-    default=2,
+    default=20,
     help="Number of rounds of federated learning (default: 1)",
 )
 parser.add_argument(
@@ -93,9 +93,9 @@ def main() -> None:
     fl.common.logger.configure("server")
     
     config = {
-        "learning_rate": 0.0001,
-        "weight_decay": 1e-6,
-        "num_window": 10,
+        "learning_rate": 0.00001,
+        "weight_decay": 1e-5,
+        "num_window": 5,
     }
 
     # Load evaluation data
@@ -154,7 +154,7 @@ def fit_config(rnd: int) -> Dict[str, fl.common.Scalar]:
     """Return a configuration with static batch size and (local) epochs."""
     config = {
         "epoch_global": str(rnd),
-        "epochs": str(10),
+        "epochs": str(5),
         "num_workers": str(args.num_workers),
         "pin_memory": str(args.pin_memory),
         "model": args.model,
@@ -209,7 +209,7 @@ def get_eval_fn(
         pprint(result)
         print("++++++++> Loss: ", ls)
         print("++++++++> Accuracy: ", accuracy)
-        return ls, {"accuracy": accuracy}
+        return ls, {"accuracy": accuracy, 'f1': result['f1'], 'precision': result['precision'], 'recall': result['recall']}
     return evaluate
 
 

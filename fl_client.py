@@ -187,8 +187,8 @@ def main():
 
     config = {
         "learning_rate": 0.0001,
-        "weight_decay": 1e-6,
-        "num_window": 10,
+        "weight_decay": 1e-5,
+        "num_window": 5,
     }
 
     # Configure logger

@@ -1,3 +1,4 @@
+import enum
 import os
 import numpy as np
 import torch
@@ -28,8 +29,8 @@ def load_model(modelname, dims, config, args = None):
         model = model_class(dims, config).double()
         optimizer = torch.optim.AdamW(model.parameters(), lr=config['learning_rate'], weight_decay=config['weight_decay'])
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 5, 0.9)
-        fname = f'checkpoints/{args.model}_{args.dataset}/model.ckpt'
-        # fname = ''
+        # fname = f'checkpoints/{args.model}_{args.dataset}/model.ckpt'
+        fname = ''
         if os.path.exists(fname):
             print(f"{color.GREEN}Loading pre-trained model: {model.name}{color.ENDC}")
             checkpoint = torch.load(fname)
@@ -121,6 +122,7 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, training=True):
                 loss.backward()
                 optimizer.step()
             scheduler.step()
+            print(np.mean(l1s))
             tqdm.write(f'Epoch {epoch + 1},\tMSE = {np.mean(l1s)}')
             return np.mean(l1s), optimizer.param_groups[0]['lr']
         else:

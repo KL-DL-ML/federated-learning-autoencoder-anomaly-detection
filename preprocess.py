@@ -1,5 +1,6 @@
 import os
 import argparse
+import random
 import pandas as pd
 import numpy as np
 from scipy.signal import savgol_filter as sg
@@ -11,7 +12,7 @@ def filtering(dataset):
     try:
         for column in dataset.columns:
             try:
-                dataset[column] = sg(dataset[column], window_length=5, polyorder=3)
+                dataset[column] = sg(dataset[column], window_length=11, polyorder=5)
             except Exception as e:
                 print(e)
         return dataset
@@ -28,11 +29,11 @@ def energy_dataset(dataset, ls):
     train, test = train.values[0:, 1:].astype(float), test.values[0:, 1:].astype(float)
     
     train = scaler.fit_transform(train)
-    test = scaler.transform(test)
+    test = scaler.fit_transform(test)
     
     ls = ls.values[:, 0].astype(int)
     labels = np.zeros_like(test)
-    for i in range(-500, 500):
+    for i in range(-250, 250):
         labels[ls + i, :] = 1
     print(train.shape, test.shape, labels.shape)
     return train, test, labels

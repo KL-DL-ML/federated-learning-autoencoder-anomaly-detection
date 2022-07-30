@@ -79,20 +79,19 @@ def main():
             plotter(f'{args.model}_{args.dataset}', testO, y_pred, loss, labels)
         plot_actual_predicted(f'{args.model}_{args.dataset}', testO, y_pred)
         ### Scores
-        df = pd.DataFrame()
         lossT, _ = backprop(0, model, trainD, trainO, optimizer, scheduler, training=False)
         for i in range(loss.shape[1]):
             lt, l, ls = lossT[:, i], loss[:, i], labels[:, i]
-            result, pred = pot_eval(lt, l, ls)
-            preds.append(pred)
-            df = df.append(result, ignore_index=True)
-
+            result, _ = pot_eval(lt, l, ls)
+            anomalies(f'{args.model}_{args.dataset}', f'Dim {i}', l, result['threshold'])
+            
         lossTfinal, lossFinal = np.mean(lossT, axis=1), np.mean(loss, axis=1)
         labelsFinal = (np.sum(labels, axis=1) >= 1) + 0
         
         result, _ = pot_eval(lossTfinal, lossFinal, labelsFinal)
         pprint(result)
-        print(np.sum(loss))
+        
+        anomaly(f'{args.model}_{args.dataset}', loss, result['threshold'])
     
         cf_matrix = [[result['TP'], result['FP']], [result['FN'], result['TN']]]
         plot_confusion_matrix_fl(f'{args.model}_{args.dataset}', 'server', np.asarray(cf_matrix))

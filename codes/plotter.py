@@ -148,6 +148,33 @@ def plotter(name, y_true, y_pred, ascore, labels):
 	pdf.close()
  
  
+def anomaly(name, ascore, threshold):
+    os.makedirs(os.path.join('plots', name), exist_ok=True)
+    pdf = PdfPages(f'plots/{name}/anomaly.pdf')
+    for dim in range(ascore.shape[1]):
+        a_s = ascore[:, dim]
+        fig, ax = plt.subplots(1, 1, sharex=True)
+        ax.plot(a_s, linewidth=0.2, color='g')
+        ax.set_xlabel('Test Size')
+        ax.set_ylabel('Anomaly Score')
+        ax.axhline(threshold, linestyle='--', color='r')
+        pdf.savefig(fig)
+        plt.close()
+    pdf.close()
+    
+ 
+def anomalies(folder, name, ascore, threshold):
+    os.makedirs(os.path.join('plots', folder), exist_ok=True)
+    pdf = PdfPages(f'plots/{folder}/{name}.pdf')
+    fig, ax = plt.subplots(1, 1, sharex=True)
+    ax.plot(ascore, linewidth=0.2, color='g')
+    ax.set_xlabel('Test Size')
+    ax.set_ylabel('Anomaly Score')
+    ax.axhline(threshold, linestyle='--', color='r')
+    pdf.savefig(fig)
+    plt.close()
+    pdf.close()
+ 
 def plot_roc_auc_curve(models, fprs, tprs):
     os.makedirs(os.path.join('plots'), exist_ok=True)
     pdf = PdfPages(f'plots/roc_auc_curve.pdf')
