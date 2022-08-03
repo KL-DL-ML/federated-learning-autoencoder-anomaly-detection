@@ -73,13 +73,13 @@ def main():
     model.eval()
     with torch.no_grad():
         print(f'{color.HEADER}Testing {args.model} on {args.dataset}{color.ENDC}')
-        loss, y_pred = backprop(0, model, testD, testO, optimizer, scheduler, training=False)
+        loss, mae, y_pred = backprop(0, model, testD, testO, optimizer, scheduler, training=False)
         ### Plot curves
         if not args.test:
             plotter(f'{args.model}_{args.dataset}', testO, y_pred, loss, labels)
         plot_actual_predicted(f'{args.model}_{args.dataset}', testO, y_pred)
         ### Scores
-        lossT, _ = backprop(0, model, trainD, trainO, optimizer, scheduler, training=False)
+        lossT, _, _ = backprop(0, model, trainD, trainO, optimizer, scheduler, training=False)
         for i in range(loss.shape[1]):
             lt, l, ls = lossT[:, i], loss[:, i], labels[:, i]
             result, _ = pot_eval(lt, l, ls)
@@ -90,6 +90,9 @@ def main():
         
         result, _ = pot_eval(lossTfinal, lossFinal, labelsFinal)
         pprint(result)
+        
+        print("MAE: ", np.mean(mae))
+        print("MSE: ", np.mean(loss))
         
         anomaly(f'{args.model}_{args.dataset}', loss, result['threshold'])
     

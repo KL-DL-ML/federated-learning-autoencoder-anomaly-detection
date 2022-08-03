@@ -1,4 +1,3 @@
-import enum
 import os
 import numpy as np
 import torch
@@ -55,6 +54,7 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, training=True):
     feats = dataO.shape[1]
     if 'USAD' in model.name:
         l = nn.MSELoss(reduction='none')
+        l1 = nn.L1Loss(reduction='none')
         n = epoch + 1
         l1s, l2s = [], []
         if training:
@@ -82,35 +82,14 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, training=True):
             y_pred = ae1s[:, data.shape[1] - feats:data.shape[1]].view(-1, feats)
             loss = 0.1 * l(ae1s, data) + 0.9 * l(ae2ae1s, data)
             loss = loss[:, data.shape[1] - feats:data.shape[1]].view(-1, feats)
-            return loss.detach().numpy(), y_pred.detach().numpy()
+
+            mae = 0.1 * l1(ae1s, data) + 0.9 * l1(ae2ae1s, data)
+            mae = mae[:, data.shape[1]-feats:data.shape[1]].view(-1, feats)
+            return loss.detach().numpy(), mae.detach().numpy(), y_pred.detach().numpy()
         
-    elif 'LSTM_AE' in model.name:
-        l = nn.MSELoss(reduction = 'none')
-        n = epoch + 1
-        l1s = []
-        if training:
-            for _, d in enumerate(data):
-                x = model(d)
-                loss = torch.mean(l(x, d))
-                l1s.append(torch.mean(loss).item())
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-            scheduler.step()
-            tqdm.write(f'Epoch {epoch + 1},\tMSE = {np.mean(l1s)}')
-            return np.mean(l1s), optimizer.param_groups[0]['lr']
-        else:
-            xs = []
-            for d in data: 
-                x = model(d)
-                xs.append(x)
-            xs = torch.stack(xs)
-            y_pred = xs[:, data.shape[1]-feats:data.shape[1]].view(-1, feats)
-            loss = l(xs, data)
-            loss = loss[:, data.shape[1]-feats:data.shape[1]].view(-1, feats)
-            return loss.detach().numpy(), y_pred.detach().numpy()
     elif 'AE' in model.name:
         l = nn.MSELoss(reduction = 'none')
+        l1 = nn.L1Loss(reduction = 'none')
         n = epoch + 1
         l1s = []
         if training:
@@ -122,7 +101,6 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, training=True):
                 loss.backward()
                 optimizer.step()
             scheduler.step()
-            print(np.mean(l1s))
             tqdm.write(f'Epoch {epoch + 1},\tMSE = {np.mean(l1s)}')
             return np.mean(l1s), optimizer.param_groups[0]['lr']
         else:
@@ -134,7 +112,9 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, training=True):
             y_pred = xs[:, data.shape[1]-feats:data.shape[1]].view(-1, feats)
             loss = l(xs, data)
             loss = loss[:, data.shape[1]-feats:data.shape[1]].view(-1, feats)
-            return loss.detach().numpy(), y_pred.detach().numpy()
+            mae = l1(xs, data)
+            mae = mae[:, data.shape[1]-feats:data.shape[1]].view(-1, feats)
+            return loss.detach().numpy(), mae.detach().numpy(), y_pred.detach().numpy()
         
     else:
         y_pred = model(data)

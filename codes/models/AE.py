@@ -7,31 +7,6 @@ class AE(nn.Module):
         self.lr = config['learning_rate']
         self.n_window = config['num_window']
         n = feats * self.n_window
-        # self.encoder = nn.Sequential(
-        #     nn.Linear(n, int(0.75*n)),
-        #     nn.ReLU(),
-        #     nn.Linear(int(0.75*n), int(0.5*n)),
-        #     nn.ReLU(),
-        #     nn.Linear(int(0.5*n), int(0.33*n)),
-        #     nn.ReLU(),
-        #     nn.Linear(int(0.33*n), int(0.25*n)),
-        #     nn.ReLU(),
-        #     nn.Linear(int(0.25*n), int(0.13*n)),
-        #     nn.ReLU(),
-        # )
-
-        # self.decoder = nn.Sequential(
-        #     nn.Linear(int(0.13*n), int(0.25*n)),
-        #     nn.ReLU(),
-        #     nn.Linear(int(0.25*n), int(0.33*n)),
-        #     nn.ReLU(),
-        #     nn.Linear(int(0.33*n), int(0.5*n)),
-        #     nn.ReLU(),
-        #     nn.Linear(int(0.5*n), int(0.75*n)),
-        #     nn.ReLU(),
-        #     nn.Linear(int(0.75*n), int(n)),
-        #     nn.ReLU(),
-        # )
         self.encoder = nn.Sequential(
             nn.Linear(n, int(0.75*n)),
             nn.Tanh(),
@@ -42,7 +17,6 @@ class AE(nn.Module):
             nn.Linear(int(0.33*n), int(0.25*n)),
             nn.Tanh(),
         )
-
         self.decoder = nn.Sequential(
             nn.Linear(int(0.25*n), int(0.33*n)),
             nn.Tanh(),

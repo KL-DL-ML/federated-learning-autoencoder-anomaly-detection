@@ -190,3 +190,17 @@ def plot_roc_auc_curve(models, fprs, tprs):
     pdf.close()
 
 
+def ROC(y_test,y_pred):
+    fpr,tpr,tr=roc_curve(y_test,y_pred)
+    auc=roc_auc_score(y_test,y_pred)
+    idx=np.argwhere(np.diff(np.sign(tpr-(1-fpr)))).flatten()
+
+    plt.xlabel("FPR")
+    plt.ylabel("TPR")
+    plt.plot(fpr,tpr,label="AUC="+str(auc))
+    plt.plot(fpr,1-fpr,'r:')
+    plt.plot(fpr[idx],tpr[idx], 'ro')
+    plt.legend(loc=4)
+    plt.grid()
+    plt.show()
+    return tr[idx]

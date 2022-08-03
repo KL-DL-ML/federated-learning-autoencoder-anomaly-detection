@@ -27,7 +27,7 @@ parser.add_argument(
 parser.add_argument(
     "--rounds",
     type=int,
-    default=20,
+    default=5,
     help="Number of rounds of federated learning (default: 1)",
 )
 parser.add_argument(
@@ -80,7 +80,6 @@ def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     return {"accuracy": sum(accuracies) / sum(examples)}
 
 def main() -> None:
-    """Start server and train five rounds."""
     print(args)
     
     start = time()
@@ -93,9 +92,9 @@ def main() -> None:
     fl.common.logger.configure("server")
     
     config = {
-        "learning_rate": 0.00001,
+        "learning_rate": 0.0001,
         "weight_decay": 1e-5,
-        "num_window": 5,
+        "num_window": 10,
     }
 
     # Load evaluation data
@@ -112,14 +111,15 @@ def main() -> None:
     # Create client_manager, strategy, and server
     client_manager = fl.server.SimpleClientManager()
     strategy = fl.server.strategy.FedAvg(
-        fraction_fit=1,
+        fraction_fit=0.5,
         fraction_eval=1,
         min_fit_clients=args.min_sample_size,
         min_eval_clients=args.min_sample_size,
         min_available_clients=args.min_num_clients,
         eval_fn=get_eval_fn(model, optimizer, scheduler, trainD, testD, trainO, testO, labels),
         on_fit_config_fn=fit_config,
-        # on_evaluate_config_fn=evaluate_config,
+        on_evaluate_config_fn=evaluate_config,
+        evaluate_metrics_aggregation_fn=weighted_average,
         initial_parameters=fl.common.weights_to_parameters(model_weights),
     )
     server = fl.server.Server(client_manager=client_manager, strategy=strategy)
@@ -132,8 +132,8 @@ def main() -> None:
     )
     
     print(color.BOLD + 'Training time: ' + "{:10.4f}".format(time() - start) + ' s' + color.ENDC)
-    print('Saving Model')
-    save_model(model, optimizer, scheduler)
+    # print('Saving Model')
+    # save_model(model, optimizer, scheduler)
 
 def save_model(model, optimizer, scheduler):
     try:
@@ -154,7 +154,7 @@ def fit_config(rnd: int) -> Dict[str, fl.common.Scalar]:
     """Return a configuration with static batch size and (local) epochs."""
     config = {
         "epoch_global": str(rnd),
-        "epochs": str(5),
+        "epochs": str(15),
         "num_workers": str(args.num_workers),
         "pin_memory": str(args.pin_memory),
         "model": args.model,
@@ -179,8 +179,8 @@ def get_eval_fn(
 ) -> Callable[[fl.common.Weights], Optional[Tuple[float, float]]]:
     def evaluate(weights: fl.common.Weights) -> Optional[Tuple[float, float]]:
         set_weights(model, weights)
-        loss, _ = backprop(0, model, testD, testO, optimizer, scheduler, training=False)
-        lossT, _ = backprop(0, model, trainD, trainO, optimizer, scheduler, training=False)
+        loss, mae, _ = backprop(0, model, testD, testO, optimizer, scheduler, training=False)
+        lossT, _, _ = backprop(0, model, trainD, trainO, optimizer, scheduler, training=False)
         
         lossTfinal, lossFinal = np.mean(lossT, axis=1), np.mean(loss, axis=1)
         labelsFinal = (np.sum(labels, axis=1) >= 1) + 0
@@ -208,8 +208,9 @@ def get_eval_fn(
         #                                                                                               FPR))
         pprint(result)
         print("++++++++> Loss: ", ls)
+        print("++++++++> MAE: ", np.mean(mae))
         print("++++++++> Accuracy: ", accuracy)
-        return ls, {"accuracy": accuracy, 'f1': result['f1'], 'precision': result['precision'], 'recall': result['recall']}
+        return ls, {"accuracy": accuracy}
     return evaluate
 
 
