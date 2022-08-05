@@ -81,7 +81,7 @@ def plot_accuracies(accuracy_list, folder):
     plt.savefig(f'plots/{folder}/training-graph.pdf')
     plt.clf()
     plt.close()
-    
+
 
 def plot_losses(accuracy_list, folder):
     os.makedirs(f'plots/{folder}/', exist_ok=True)

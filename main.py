@@ -55,7 +55,7 @@ def main():
         e = epoch + 1
         start = time()
         for e in tqdm(list(range(epoch + 1, epoch + num_epochs + 1))):
-            lossT, lr = backprop(e, model, trainD, trainO, optimizer, scheduler)
+            lossT, lr = backprop(e, model, trainD, trainO, optimizer, scheduler)            
             accuracy_list.append((lossT, lr))
             # Start Early Stopping
             early_stopping(lossT)

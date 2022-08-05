@@ -27,7 +27,7 @@ parser.add_argument(
 parser.add_argument(
     "--rounds",
     type=int,
-    default=5,
+    default=20,
     help="Number of rounds of federated learning (default: 1)",
 )
 parser.add_argument(
@@ -63,15 +63,6 @@ parser.add_argument(
 parser.add_argument("--pin_memory", action="store_true")
 args = parser.parse_args()
 
-def evaluate_config(rnd: int):
-    """Return evaluation configuration dict for each round.
-    Perform five local evaluation steps on each client (i.e., use five
-    batches) during rounds one to three, then increase to ten local
-    evaluation steps.
-    """
-    val_steps = 5 if rnd < 4 else 10
-    return {"val_steps": val_steps}
-
 def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     # Multiply accuracy of each client by number of examples used
     accuracies = [num_examples * m["accuracy"] for num_examples, m in metrics]
@@ -105,39 +96,37 @@ def main() -> None:
     trainD, testD = next(iter(train_loader)), next(iter(test_loader))
     trainO, testO = trainD, testD
     
-    if model.name == "AE":
-        trainD, testD = convert_to_windows(trainD, model), convert_to_windows(testD, model)
+    trainD, testD = convert_to_windows(trainD, model), convert_to_windows(testD, model)
     
     # Create client_manager, strategy, and server
     client_manager = fl.server.SimpleClientManager()
     strategy = fl.server.strategy.FedAvg(
         fraction_fit=0.5,
-        fraction_eval=1,
+        fraction_eval=0.5,
         min_fit_clients=args.min_sample_size,
         min_eval_clients=args.min_sample_size,
         min_available_clients=args.min_num_clients,
         eval_fn=get_eval_fn(model, optimizer, scheduler, trainD, testD, trainO, testO, labels),
         on_fit_config_fn=fit_config,
-        on_evaluate_config_fn=evaluate_config,
         evaluate_metrics_aggregation_fn=weighted_average,
         initial_parameters=fl.common.weights_to_parameters(model_weights),
     )
     server = fl.server.Server(client_manager=client_manager, strategy=strategy)
 
     # Run server
-    fl.server.start_server(
+    history = fl.server.start_server(
         server_address=args.server_address,
         server=server,
         config={"num_rounds": args.rounds},
     )
-    
+    print(history)
     print(color.BOLD + 'Training time: ' + "{:10.4f}".format(time() - start) + ' s' + color.ENDC)
-    # print('Saving Model')
-    # save_model(model, optimizer, scheduler)
+    print('Saving Model')
+    save_model(model, optimizer, scheduler)
 
 def save_model(model, optimizer, scheduler):
     try:
-        folder = f'checkpoints/FL_{args.model}_{args.dataset}/'
+        folder = f'checkpoints/{args.model}_{args.dataset}/'
         os.makedirs(folder, exist_ok=True)
         file_path = f'{folder}/model.ckpt'
         torch.save(
