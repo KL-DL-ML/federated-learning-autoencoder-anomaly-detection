@@ -1,7 +1,8 @@
 import argparse
 from collections import OrderedDict
 from pprint import pprint
-from typing import Callable, Dict, Optional, Tuple, List
+from typing import Callable, Dict, List, Optional, Tuple, Union
+from unittest import result
 
 import flwr as fl
 from flwr.common import Metrics
@@ -14,7 +15,8 @@ from codes.model_utils import *
 from codes.evaluations.eval_utils import *
 
 # pylint: disable=no-member
-DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+# DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+DEVICE = 'cpu'
 # pylint: enable=no-member
 
 parser = argparse.ArgumentParser(description="Flower")
@@ -63,6 +65,27 @@ parser.add_argument(
 parser.add_argument("--pin_memory", action="store_true")
 args = parser.parse_args()
 
+class SaveModelStrategy(fl.server.strategy.FedAvg):
+    def aggregate_fit(
+        self,
+        server_round: int,
+        results: List[Tuple[fl.server.client_proxy.ClientProxy, fl.common.FitRes]],
+        failures: List[
+            Union[
+                Tuple[fl.server.client_proxy.ClientProxy, fl.common.FitRes],
+                BaseException,
+            ]
+        ],
+    ) -> Optional[fl.common.Weights]:
+        os.makedirs(f"training_rounds/{args.model}/{args.dataset}", exist_ok=True)
+        weights = super().aggregate_fit(server_round, results, failures)
+        if weights is not None:
+            # Save weights
+            print(f"Saving round {server_round} weights...")
+            np.savez(f"training_rounds/{args.model}/{args.dataset}/round-{server_round}-weights.npz", *weights)
+        return weights
+
+
 def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     # Multiply accuracy of each client by number of examples used
     accuracies = [num_examples * m["accuracy"] for num_examples, m in metrics]
@@ -85,7 +108,7 @@ def main() -> None:
     config = {
         "learning_rate": 0.0001,
         "weight_decay": 1e-5,
-        "num_window": 10,
+        "num_window": 15,
     }
 
     # Load evaluation data
@@ -100,7 +123,7 @@ def main() -> None:
     
     # Create client_manager, strategy, and server
     client_manager = fl.server.SimpleClientManager()
-    strategy = fl.server.strategy.FedAvg(
+    strategy = SaveModelStrategy(
         fraction_fit=0.5,
         fraction_eval=0.5,
         min_fit_clients=args.min_sample_size,
@@ -119,7 +142,6 @@ def main() -> None:
         server=server,
         config={"num_rounds": args.rounds},
     )
-    print(history)
     print(color.BOLD + 'Training time: ' + "{:10.4f}".format(time() - start) + ' s' + color.ENDC)
     print('Saving Model')
     save_model(model, optimizer, scheduler)
@@ -189,16 +211,11 @@ def get_eval_fn(
         FPR = round((FP / (FP + TN)), 6)
         
         accuracy = (TP + TN) / (TP + TN + FP + FN)
-        # print('Acc: %.6f%% \nPrecision: %.6f \nRecall: %.6f \nF1score: %.6f \nTPR: %.6f \nFPR: %.6f'%(accuracy*100, 
-        #                                                                                               result['precision'], 
-        #                                                                                               result['recall'], 
-        #                                                                                               result['f1'], 
-        #                                                                                               TPR, 
-        #                                                                                               FPR))
-        pprint(result)
-        print("++++++++> Loss: ", ls)
+        
+        # pprint(result)
+        print("++++++++> MAE: ", ls)
         print("++++++++> MAE: ", np.mean(mae))
-        print("++++++++> Accuracy: ", accuracy)
+        # print("++++++++> Accuracy: ", accuracy)
         return ls, {"accuracy": accuracy}
     return evaluate
 

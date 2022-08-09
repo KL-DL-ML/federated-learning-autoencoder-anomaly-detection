@@ -1,4 +1,5 @@
 import os
+from turtle import color
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -21,14 +22,21 @@ def smooth(y, box_pts=1):
 def plot_actual_predicted(name, y_true, y_pred):
     try:
         os.makedirs(os.path.join('plots', name), exist_ok=True)
-        # TODO: Add Column Names for Each Plot
+        columns = ['Global active power', 'Global reactive power', 'Voltage', 'Global intensity', 'Submetering 1', 'Submetering 2', 'Submetering 3', 'Submetering 4']
         if y_true.shape == y_pred.shape:
             pdf = PdfPages(f'plots/{name}/active_v_predicted.pdf')
             for dim in range(y_true.shape[1]):
                 fig, ax = plt.subplots()
-                y_t, y_p = y_true[:, dim], y_pred[:, dim]
-                ax.plot(smooth(y_t), label='True')
-                ax.plot(smooth(y_p), label='Predicted')
+                y_t, y_p = y_true[0:720, dim], y_pred[0:720, dim]
+                ax.plot(y_t, label='Actual', linewidth=1, color='#6666FF')
+                ax.plot(y_p, label='Predicted', linewidth=1, color='#FF3333', linestyle='-')
+                ax.set_ylabel(columns[dim])
+                ax.set_xlabel('Time')
+                ax.legend(
+                    loc='upper center', 
+                    bbox_to_anchor=(0.5, 1.2),
+                    ncol=2, 
+                )
                 pdf.savefig(fig)
                 plt.close()
             pdf.close()
@@ -81,7 +89,17 @@ def plot_accuracies(accuracy_list, folder):
     plt.savefig(f'plots/{folder}/training-graph.pdf')
     plt.clf()
     plt.close()
-
+    
+def loss_val_loss(loss, val_loss, folder):
+    os.makedirs(f'plots/{folder}/', exist_ok=True)
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.plot(range(len(loss)), loss, label='Average Training Loss', linewidth=1, linestyle='-', marker='.')
+    plt.twinx()
+    plt.plot(range(len(val_loss)), val_loss, label='Average Validation Loss', color='r', linewidth=1, linestyle='--', marker='.')
+    plt.savefig(f'plots/{folder}/loss_vs_val_loss.pdf')
+    plt.clf()
+    plt.close()
 
 def plot_losses(accuracy_list, folder):
     os.makedirs(f'plots/{folder}/', exist_ok=True)

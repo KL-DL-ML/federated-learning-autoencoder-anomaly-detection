@@ -77,6 +77,7 @@ def main():
         ### Plot curves
         if not args.test:
             plotter(f'{args.model}_{args.dataset}', testO, y_pred, loss, labels)
+        plotter(f'{args.model}_{args.dataset}', testO, y_pred, loss, labels)
         plot_actual_predicted(f'{args.model}_{args.dataset}', testO, y_pred)
         ### Scores
         lossT, _, _ = backprop(0, model, trainD, trainO, optimizer, scheduler, training=False)

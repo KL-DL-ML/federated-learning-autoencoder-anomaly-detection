@@ -14,7 +14,8 @@ from codes.model_utils import *
 from codes.evaluations.eval_utils import *
 from codes.plotter import *
 
-DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+# DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+DEVICE = 'cpu'
 
 def get_weights(model: torch.nn.ModuleList) -> fl.common.Weights:
     """Get model weights as a list of NumPy ndarrays."""
@@ -188,7 +189,7 @@ def main():
     config = {
         "learning_rate": 0.0001,
         "weight_decay": 1e-5,
-        "num_window": 10,
+        "num_window": 15,
     }
 
     # Configure logger

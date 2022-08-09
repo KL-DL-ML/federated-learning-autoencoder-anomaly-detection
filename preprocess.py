@@ -1,6 +1,7 @@
 import os
 import argparse
 import random
+from matplotlib.pyplot import sca
 import pandas as pd
 import numpy as np
 from scipy.signal import savgol_filter as sg
@@ -22,19 +23,19 @@ def filtering(dataset):
 
 def energy_dataset(dataset, ls):
     scaler = MinMaxScaler()
-    
     split_rate = float(args.trainsize / 100)
     train = dataset.loc[:dataset.shape[0] * split_rate - 1]
     test = dataset.loc[dataset.shape[0] * split_rate:]
     train, test = train.values[0:, 1:].astype(float), test.values[0:, 1:].astype(float)
     
-    train = scaler.fit_transform(train)
-    test = scaler.fit_transform(test)
-    
     ls = ls.values[:, 0].astype(int)
     labels = np.zeros_like(test)
+    
     for i in range(-250, 250):
         labels[ls + i, :] = 1
+    
+    train = scaler.fit_transform(train)
+    test = scaler.fit_transform(test)
     print(train.shape, test.shape, labels.shape)
     return train, test, labels
 
