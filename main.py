@@ -58,11 +58,12 @@ def main():
             lossT, lr = backprop(e, model, trainD, trainO, optimizer, scheduler)            
             accuracy_list.append((lossT, lr))
             # Start Early Stopping
-            early_stopping(lossT)
-            if early_stopping.early_stop:
-                print("Early stopping at epoch {}!!!".format(e))
-                break
+            # early_stopping(lossT)
+            # if early_stopping.early_stop:
+            #     print("Early stopping at epoch {}!!!".format(e))
+            #     break
             # End Early Stopping
+        training_time = time() - start
         print(color.BOLD + 'Training time: ' + "{:10.4f}".format(time() - start) + ' s' + color.ENDC)
         save_model(model, optimizer, scheduler, e, accuracy_list, args)
         plot_accuracies(accuracy_list, f'{args.model}_{args.dataset}')
@@ -94,6 +95,7 @@ def main():
         
         print("MAE: ", np.mean(mae))
         print("MSE: ", np.mean(loss))
+        # print('Traning Time: ', training_time)
         
         anomaly(f'{args.model}_{args.dataset}', loss, result['threshold'])
     

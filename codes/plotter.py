@@ -22,7 +22,7 @@ def smooth(y, box_pts=1):
 def plot_actual_predicted(name, y_true, y_pred):
     try:
         os.makedirs(os.path.join('plots', name), exist_ok=True)
-        columns = ['Global active power', 'Global reactive power', 'Voltage', 'Global intensity', 'Submetering 1', 'Submetering 2', 'Submetering 3', 'Submetering 4']
+        columns = ['Active power', 'Reactive power', 'Voltage', 'Intensity', 'Submetering 1', 'Submetering 2', 'Submetering 3', 'Submetering 4']
         if y_true.shape == y_pred.shape:
             pdf = PdfPages(f'plots/{name}/active_v_predicted.pdf')
             for dim in range(y_true.shape[1]):
@@ -31,12 +31,16 @@ def plot_actual_predicted(name, y_true, y_pred):
                 ax.plot(y_t, label='Actual', linewidth=1, color='#6666FF')
                 ax.plot(y_p, label='Predicted', linewidth=1, color='#FF3333', linestyle='-')
                 ax.set_ylabel(columns[dim])
-                ax.set_xlabel('Time')
-                ax.legend(
-                    loc='upper center', 
-                    bbox_to_anchor=(0.5, 1.2),
-                    ncol=2, 
-                )
+                if dim == 7:
+                    ax.set_xlabel('Time')
+                ax.set_xticks([])
+                ax.set_yticks([])
+                if dim == 0:
+                    ax.legend(
+                        loc='upper center',
+                        bbox_to_anchor=(0.5, 1.2),
+                        ncol=2,
+                    )
                 pdf.savefig(fig)
                 plt.close()
             pdf.close()
@@ -206,19 +210,3 @@ def plot_roc_auc_curve(models, fprs, tprs):
     pdf.savefig(fig)
     plt.close()
     pdf.close()
-
-
-def ROC(y_test,y_pred):
-    fpr,tpr,tr=roc_curve(y_test,y_pred)
-    auc=roc_auc_score(y_test,y_pred)
-    idx=np.argwhere(np.diff(np.sign(tpr-(1-fpr)))).flatten()
-
-    plt.xlabel("FPR")
-    plt.ylabel("TPR")
-    plt.plot(fpr,tpr,label="AUC="+str(auc))
-    plt.plot(fpr,1-fpr,'r:')
-    plt.plot(fpr[idx],tpr[idx], 'ro')
-    plt.legend(loc=4)
-    plt.grid()
-    plt.show()
-    return tr[idx]

@@ -129,6 +129,7 @@ parser.add_argument('--trainsize',
                     default=80,
                     help="percentage of train size of the dataset.")
 parser.add_argument('--filter',
+                    default=False,
                     action='store_true',
                     help="filter the dataset.")
 args = parser.parse_args()

@@ -134,19 +134,19 @@ class Client(fl.client.Client):
         FPR = round((FP / (FP + TN)), 6)
         
         accuracy = (TP + TN) / (TP + TN + FP + FN)
-        # print('==========================================================')
-        # print('Client {}'.format(self.cid))
-        # print('Acc: %.6f%% \nPrecision: %.6f \nRecall: %.6f \nF1score: %.6f \nTPR: %.6f \nFPR: %.6f'%(accuracy*100, 
-        #                                                                                               result['precision'], 
-        #                                                                                               result['recall'], 
-        #                                                                                               result['f1'], 
-        #                                                                                               TPR, 
-        #                                                                                               FPR))
-        # print('==========================================================')
+        print('==========================================================')
+        print('Client {}'.format(self.cid))
+        print('Acc: %.6f%% \nPrecision: %.6f \nRecall: %.6f \nF1score: %.6f \nTPR: %.6f \nFPR: %.6f'%(accuracy*100, 
+                                                                                                      result['precision'], 
+                                                                                                      result['recall'], 
+                                                                                                      result['f1'], 
+                                                                                                      TPR, 
+                                                                                                      FPR))
+        print('==========================================================')
         # print(f"=========> Client {self.cid} Loss: {ls}")
         # print(f"=========> Client {self.cid} Accuracy: {accuracy}")
-        
-        metrics = {"accuracy": float(accuracy), "f1": float(result['f1'])}
+        print(f"=========> Client {self.cid} Result: {result}")
+        metrics = {"accuracy": float(accuracy)}
         return EvaluateRes(
             loss=float(ls), num_examples=len(self.testset), metrics=metrics
         )

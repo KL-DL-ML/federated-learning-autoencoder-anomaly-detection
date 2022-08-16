@@ -165,7 +165,7 @@ def fit_config(rnd: int) -> Dict[str, fl.common.Scalar]:
     """Return a configuration with static batch size and (local) epochs."""
     config = {
         "epoch_global": str(rnd),
-        "epochs": str(15),
+        "epochs": str(10),
         "num_workers": str(args.num_workers),
         "pin_memory": str(args.pin_memory),
         "model": args.model,
@@ -212,10 +212,10 @@ def get_eval_fn(
         
         accuracy = (TP + TN) / (TP + TN + FP + FN)
         
-        # pprint(result)
-        print("++++++++> MAE: ", ls)
-        print("++++++++> MAE: ", np.mean(mae))
-        # print("++++++++> Accuracy: ", accuracy)
+        pprint(f"Server Aggregrated: {result}")
+        print(f"Server TPR: {TPR}, FPR: {FPR}")
+        # print("================> MAE: ", np.mean(mae))
+        # print("================> MSE: ", np.mean(loss))
         return ls, {"accuracy": accuracy}
     return evaluate
 

@@ -28,7 +28,8 @@ def load_model(modelname, dims, config, args = None):
         model = model_class(dims, config).double()
         optimizer = torch.optim.AdamW(model.parameters(), lr=config['learning_rate'], weight_decay=config['weight_decay'])
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 5, 0.9)
-        fname = f'checkpoints/{args.model}_{args.dataset}/model.ckpt'
+        # fname = f'checkpoints/{args.model}_{args.dataset}/model.ckpt'
+        fname = ''
         if os.path.exists(fname):
             print(f"{color.GREEN}Loading pre-trained model: {model.name}{color.ENDC}")
             checkpoint = torch.load(fname)
