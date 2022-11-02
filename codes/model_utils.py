@@ -5,7 +5,6 @@ import torch.nn as nn
 from tqdm import tqdm
 from .constants import *
 
-
 def save_model(model, optimizer, scheduler, epoch, accuracy_list, args = None):
     try:
         folder = f'checkpoints/{args.model}_{args.dataset}/'
@@ -51,7 +50,36 @@ def load_model(modelname, dims, config, args = None):
 
 def backprop(epoch, model, data, dataO, optimizer, scheduler, training=True):
     l = nn.MSELoss(reduction='mean' if training else 'none')
+    l1 = nn.L1Loss(reduction = 'none')
     feats = dataO.shape[1]
+
+    if 'DAGMM' in model.name:
+        l = nn.MSELoss(reduction = 'none')
+        n = epoch + 1; w_size = model.n_window
+        l1s = []; l2s = []
+        if training:
+            for d in data:
+                _, x_hat, z, gamma = model(d)
+                l1, l2 = l(x_hat, d), l(gamma, d)
+                l1s.append(torch.mean(l1).item()); l2s.append(torch.mean(l2).item())
+                loss = torch.mean(l1) + torch.mean(l2)
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+            scheduler.step()
+            tqdm.write(f'Epoch {epoch},\tL1 = {np.mean(l1s)},\tL2 = {np.mean(l2s)}')
+            return np.mean(l1s)+np.mean(l2s), optimizer.param_groups[0]['lr']
+        else:
+            ae1s = []
+            for d in data: 
+                _, x_hat, _, _ = model(d)
+                ae1s.append(x_hat)
+            ae1s = torch.stack(ae1s)
+            y_pred = ae1s[:, data.shape[1]-feats:data.shape[1]].view(-1, feats)
+            loss = l(ae1s, data)[:, data.shape[1]-feats:data.shape[1]].view(-1, feats)
+            mae = l1(ae1s, data)[:, data.shape[1]-feats:data.shape[1]].view(-1, feats)
+            return loss.detach().numpy(), mae.detach().numpy(), y_pred.detach().numpy()
+            
     if 'USAD' in model.name:
         l = nn.MSELoss(reduction='none')
         l1 = nn.L1Loss(reduction='none')
@@ -115,10 +143,80 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, training=True):
             mae = l1(xs, data)
             mae = mae[:, data.shape[1]-feats:data.shape[1]].view(-1, feats)
             return loss.detach().numpy(), mae.detach().numpy(), y_pred.detach().numpy()
+
+    elif 'OmniAnomaly' in model.name:
+        if training:
+            mses, klds = [], []
+            for i, d in enumerate(data):
+                y_pred, mu, logvar, hidden = model(d, hidden if i else None)
+                MSE = l(y_pred, d)
+                KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=0)
+                loss = MSE + model.beta * KLD
+                mses.append(torch.mean(MSE).item()); klds.append(model.beta * torch.mean(KLD).item())
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+            tqdm.write(f'Epoch {epoch},\tMSE = {np.mean(mses)},\tKLD = {np.mean(klds)}')
+            scheduler.step()
+            return loss.item(), optimizer.param_groups[0]['lr']
+        else:
+            y_preds = []
+            for i, d in enumerate(data):
+                y_pred, _, _, hidden = model(d, hidden if i else None)
+                y_preds.append(y_pred)
+            y_pred = torch.stack(y_preds)
+            MSE = l(y_pred, data)
+            MAE = l1(y_pred, data)
+            return MSE.detach().numpy(), MAE.detach().numpy(), y_pred.detach().numpy()
         
+    elif 'MAD_GAN' in model.name:
+        l = nn.MSELoss(reduction = 'none')
+        bcel = nn.BCELoss(reduction = 'mean')
+        msel = nn.MSELoss(reduction = 'mean')
+        real_label, fake_label = torch.tensor([0.9]), torch.tensor([0.1]) # label smoothing
+        real_label, fake_label = real_label.type(torch.DoubleTensor), fake_label.type(torch.DoubleTensor)
+        n = epoch + 1; w_size = model.n_window
+        mses, gls, dls = [], [], []
+        if training:
+            for d in data:
+                # training discriminator
+                model.discriminator.zero_grad()
+                _, real, fake = model(d)
+                dl = bcel(real, real_label) + bcel(fake, fake_label)
+                dl.backward()
+                model.generator.zero_grad()
+                optimizer.step()
+                # training generator
+                z, _, fake = model(d)
+                mse = msel(z, d) 
+                gl = bcel(fake, real_label)
+                tl = gl + mse
+                tl.backward()
+                model.discriminator.zero_grad()
+                optimizer.step()
+                mses.append(mse.item()); gls.append(gl.item()); dls.append(dl.item())
+                # tqdm.write(f'Epoch {epoch},\tMSE = {mse},\tG = {gl},\tD = {dl}')
+            tqdm.write(f'Epoch {epoch},\tMSE = {np.mean(mses)},\tG = {np.mean(gls)},\tD = {np.mean(dls)}')
+            return np.mean(gls)+np.mean(dls), optimizer.param_groups[0]['lr']
+        else:
+            outputs = []
+            for d in data: 
+                z, _, _ = model(d)
+                outputs.append(z)
+            outputs = torch.stack(outputs)
+            y_pred = outputs[:, data.shape[1]-feats:data.shape[1]].view(-1, feats)
+            loss = l(outputs, data)
+            loss = loss[:, data.shape[1]-feats:data.shape[1]].view(-1, feats)
+
+            mae = l1(outputs, data)
+            mae = mae[:, data.shape[1]-feats:data.shape[1]].view(-1, feats)
+
+            return loss.detach().numpy(), mae.detach().numpy(), y_pred.detach().numpy()
+
     else:
         y_pred = model(data)
         loss = l(y_pred, data)
+        mae = l1(y_pred, data)
         if training:
             tqdm.write(f'Epoch {epoch},\tMSE = {loss}')
             optimizer.zero_grad()
@@ -127,7 +225,7 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, training=True):
             scheduler.step()
             return loss.item(), optimizer.param_groups[0]['lr']
         else:
-            return loss.detach().numpy(), y_pred.detach().numpy()
+            return loss.detach().numpy(), mae.detach().numpy(), y_pred.detach().numpy()
         
         
 

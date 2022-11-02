@@ -39,12 +39,12 @@ def energy_dataset(dataset, ls):
     print(train.shape, test.shape, labels.shape)
     return train, test, labels
 
-def swat_dataset(df_train, df_test, labels):
-    scaler = MinMaxScaler()
-    train = scaler.fit_transform(df_train.values)
-    test = scaler.transform(df_test.values)
-    print(train.shape, test.shape, labels.shape)
-    return train, test, labels
+# def swat_dataset(df_train, df_test, labels):
+#     scaler = MinMaxScaler()
+#     train = scaler.fit_transform(df_train.values)
+#     test = scaler.transform(df_test.values)
+#     print(train.shape, test.shape, labels.shape)
+#     return train, test, labels
 
 
 def load_data(dataset):
@@ -90,25 +90,25 @@ def load_data(dataset):
     #         np.save(os.path.join(folder, f'{file}.npy'), eval(file))
         
 
-    elif dataset == 'SWaT':
-        dataset_folder = 'data/raw/SWaT'
-        file = os.path.join(dataset_folder, 'series.json')
-        train = pd.read_json(file, lines=True)[['val']][3000:6000]
-        test = pd.read_json(file, lines=True)[['val']][7000:12000]
-        labels = pd.read_json(file, lines=True)[['noti']][7000:12000] + 0
-        # 
-        if args.filter:
-            train = filtering(train)
-            test = filtering(test)
-            train, test, labels = swat_dataset(train, test, labels)
-            os.makedirs(folder + '/filtered', exist_ok=True)
-            for file in ['train', 'test', 'labels']:
-                np.save(os.path.join(folder + "/filtered", f'{file}.npy'), eval(file))
-        #
-        else:
-            train, test, labels = swat_dataset(train, test, labels)
-            for file in ['train', 'test', 'labels']:
-                np.save(os.path.join(folder, f'{file}.npy'), eval(file))
+    # elif dataset == 'SWaT':
+    #     dataset_folder = 'data/raw/SWaT'
+    #     file = os.path.join(dataset_folder, 'series.json')
+    #     train = pd.read_json(file, lines=True)[['val']][3000:6000]
+    #     test = pd.read_json(file, lines=True)[['val']][7000:12000]
+    #     labels = pd.read_json(file, lines=True)[['noti']][7000:12000] + 0
+    #     # 
+    #     if args.filter:
+    #         train = filtering(train)
+    #         test = filtering(test)
+    #         train, test, labels = swat_dataset(train, test, labels)
+    #         os.makedirs(folder + '/filtered', exist_ok=True)
+    #         for file in ['train', 'test', 'labels']:
+    #             np.save(os.path.join(folder + "/filtered", f'{file}.npy'), eval(file))
+    #     #
+    #     else:
+    #         train, test, labels = swat_dataset(train, test, labels)
+    #         for file in ['train', 'test', 'labels']:
+    #             np.save(os.path.join(folder, f'{file}.npy'), eval(file))
 
 
     else:

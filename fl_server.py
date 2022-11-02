@@ -105,15 +105,77 @@ def main() -> None:
     # Configure logger
     fl.common.logger.configure("server")
     
-    config = {
+    best_configs = {}
+
+    best_configs["USAD"] = {
+        "num_epochs": 15,
+        "num_hidden": 16,
+        "latent": 5,
+        "learning_rate": 0.0001,
+        "weight_decay": 1e-5,
+        "num_window": 10,
+    }
+    
+    best_configs["AE"] = {
+        "num_epochs": 15,
         "learning_rate": 0.0001,
         "weight_decay": 1e-5,
         "num_window": 15,
     }
 
+    best_configs["DAGMM"] = {
+        "beta": 0.01,
+        "embedding_dim": 16,
+        "num_epochs": 15,
+        "num_hidden": 16,
+        "latent": 8,
+        "learning_rate": 0.0001,
+        "weight_decay": 1e-5,
+        "num_window": 5,
+    }
+
+    best_configs["MAD_GAN"] = {
+        "num_epochs": 15,
+        "num_hidden": 16,
+        "learning_rate": 0.0001,
+        "weight_decay": 1e-5,
+        "num_window": 5,
+    }
+
+    best_configs["OmniAnomaly"] = {
+        "beta": 0.01,
+        "num_epochs": 15,
+        "num_hidden": 32,
+        "latent": 8,
+        "learning_rate": 0.002,
+        "weight_decay": 1e-5,
+    }
+    
+    best_configs["LSTM_AD"] = {
+        "beta": 0.01,
+        "batch_size": 50,
+        "embedding_dim": 16,
+        "num_epochs": 15,
+        "num_hidden": 32,
+        "learning_rate": 0.0001,
+        "layers": 3,
+        "weight_decay": 1e-5,
+    }
+    
+    best_configs["LSTM_Univariate"] = {
+        "beta": 0.01,
+        "batch_size": 50,
+        "embedding_dim": 16,
+        "num_epochs": 15,
+        "num_hidden": 32,
+        "learning_rate": 0.0001,
+        "layers": 3,
+        "weight_decay": 1e-5,
+    }
+
     # Load evaluation data
     train_loader, test_loader, labels = load_dataset(args.dataset, filter=False)
-    model, optimizer, scheduler, _, _ = load_model(args.model, labels.shape[1], config)
+    model, optimizer, scheduler, _, _ = load_model(args.model, labels.shape[1], best_configs[args.model])
     model_weights = [val.cpu().numpy() for _, val in model.state_dict().items()]
     
     trainD, testD = next(iter(train_loader)), next(iter(test_loader))

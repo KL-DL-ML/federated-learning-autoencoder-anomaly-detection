@@ -46,7 +46,7 @@ def main():
     ## Prepare data
     trainD, testD = next(iter(train_loader)), next(iter(test_loader))
     trainO, testO = trainD, testD
-    if model.name in ['USAD', 'AE']:
+    if model.name in ['USAD', 'AE', 'DAGMM', 'MAD_GAN']:
         trainD, testD = convert_to_windows(trainD, model), convert_to_windows(testD, model)
     ### Training phase
     if not args.test:
@@ -95,7 +95,7 @@ def main():
         
         print("MAE: ", np.mean(mae))
         print("MSE: ", np.mean(loss))
-        # print('Traning Time: ', training_time)
+        print('Training Time: ', training_time)
         
         anomaly(f'{args.model}_{args.dataset}', loss, result['threshold'])
     
