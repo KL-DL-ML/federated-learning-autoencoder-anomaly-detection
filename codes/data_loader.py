@@ -4,7 +4,7 @@ import numpy as np
 from torch.utils.data import DataLoader
 
 
-def load_dataset(dataset, filter=True):
+def load_dataset(dataset, filter=False):
     if filter:
         folder = os.path.join(f'data/processed/{dataset}/filtered')
     else:

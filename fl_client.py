@@ -84,10 +84,10 @@ class Client(fl.client.Client):
         e = self.epoch + 1
         start = time()
         for e in list(range(self.epoch + 1, self.epoch + epochs + 1)):
-            lossT, lr = backprop(e, self.cid, self.model, trainD, trainO, self.optimizer, self.scheduler)
+            lossT, lr = backprop_fl(e, self.cid, self.model, trainD, trainO, self.optimizer, self.scheduler)
             self.accuracy_list.append((lossT, lr))
         # plot_accuracies(self.accuracy_list, 'AE_ENERGY')
-        # print(color.BOLD + 'Training time: ' + "{:10.4f}".format(time() - start) + ' s' + color.ENDC)
+        print('Training time: ' + "{:10.4f}".format(time() - start) + ' s')
         
         # Return the refined weights and the number of examples used for training
         weights_prime: Weights = get_weights(self.model)
@@ -158,7 +158,7 @@ def main():
         "--server_address",
         type=str,
         default="localhost:9090",
-        required=True,
+        required=False,
         help=f"gRPC server address",
     )
     parser.add_argument(
@@ -187,71 +187,11 @@ def main():
     args = parser.parse_args()
 
     best_configs = {}
-
-    best_configs["USAD"] = {
-        "num_epochs": 15,
-        "num_hidden": 16,
-        "latent": 5,
-        "learning_rate": 0.0001,
-        "weight_decay": 1e-5,
-        "num_window": 10,
-    }
     
     best_configs["AE"] = {
-        "num_epochs": 15,
         "learning_rate": 0.0001,
         "weight_decay": 1e-5,
         "num_window": 15,
-    }
-
-    best_configs["DAGMM"] = {
-        "beta": 0.01,
-        "embedding_dim": 16,
-        "num_epochs": 15,
-        "num_hidden": 16,
-        "latent": 8,
-        "learning_rate": 0.0001,
-        "weight_decay": 1e-5,
-        "num_window": 5,
-    }
-
-    best_configs["MAD_GAN"] = {
-        "num_epochs": 15,
-        "num_hidden": 16,
-        "learning_rate": 0.0001,
-        "weight_decay": 1e-5,
-        "num_window": 5,
-    }
-
-    best_configs["OmniAnomaly"] = {
-        "beta": 0.01,
-        "num_epochs": 15,
-        "num_hidden": 32,
-        "latent": 8,
-        "learning_rate": 0.002,
-        "weight_decay": 1e-5,
-    }
-    
-    best_configs["LSTM_AD"] = {
-        "beta": 0.01,
-        "batch_size": 50,
-        "embedding_dim": 16,
-        "num_epochs": 15,
-        "num_hidden": 32,
-        "learning_rate": 0.0001,
-        "layers": 3,
-        "weight_decay": 1e-5,
-    }
-    
-    best_configs["LSTM_Univariate"] = {
-        "beta": 0.01,
-        "batch_size": 50,
-        "embedding_dim": 16,
-        "num_epochs": 15,
-        "num_hidden": 32,
-        "learning_rate": 0.0001,
-        "layers": 3,
-        "weight_decay": 1e-5,
     }
 
     # Configure logger

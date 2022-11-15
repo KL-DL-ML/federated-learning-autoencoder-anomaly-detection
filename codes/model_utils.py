@@ -144,6 +144,40 @@ def backprop(epoch, model, data, dataO, optimizer, scheduler, training=True):
             mae = mae[:, data.shape[1]-feats:data.shape[1]].view(-1, feats)
             return loss.detach().numpy(), mae.detach().numpy(), y_pred.detach().numpy()
 
+    elif 'MSCRED' in model.name:
+        l = nn.MSELoss(reduction = 'none')
+        n = epoch + 1; w_size = model.n_window
+        l1s = []
+        if training:
+            for i, d in enumerate(data):
+                if 'MTAD_GAT' in model.name: 
+                    x, h = model(d, h if i else None)
+                else:
+                    x = model(d)
+                loss = torch.mean(l(x, d))
+                l1s.append(torch.mean(loss).item())
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+            tqdm.write(f'Epoch {epoch},\tMSE = {np.mean(l1s)}')
+            return np.mean(l1s), optimizer.param_groups[0]['lr']
+        else:
+            xs = []
+            for d in data: 
+                if 'MTAD_GAT' in model.name: 
+                    x, h = model(d, None)
+                else:
+                    x = model(d)
+                xs.append(x)
+            xs = torch.stack(xs)
+            y_pred = xs[:, data.shape[1]-feats:data.shape[1]].view(-1, feats)
+            loss = l(xs, data)
+            loss = loss[:, data.shape[1]-feats:data.shape[1]].view(-1, feats)
+
+            mae = l1(xs, data)
+            mae = loss[:, data.shape[1]-feats:data.shape[1]].view(-1, feats)
+            return loss.detach().numpy(), mae.detach().numpy(), y_pred.detach().numpy()        
+    
     elif 'OmniAnomaly' in model.name:
         if training:
             mses, klds = [], []

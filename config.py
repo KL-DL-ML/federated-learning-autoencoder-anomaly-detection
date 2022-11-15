@@ -9,7 +9,7 @@ def get_best_config(algo_name):
         "latent": 5,
         "learning_rate": 0.0001,
         "weight_decay": 1e-5,
-        "num_window": 10,
+        "num_window": 15,
     }
     
     best_configs["AE"] = {
@@ -27,7 +27,7 @@ def get_best_config(algo_name):
         "latent": 8,
         "learning_rate": 0.0001,
         "weight_decay": 1e-5,
-        "num_window": 5,
+        "num_window": 15,
     }
 
     best_configs["MAD_GAN"] = {
@@ -35,7 +35,7 @@ def get_best_config(algo_name):
         "num_hidden": 16,
         "learning_rate": 0.0001,
         "weight_decay": 1e-5,
-        "num_window": 5,
+        "num_window": 15,
     }
 
     best_configs["OmniAnomaly"] = {
@@ -46,26 +46,24 @@ def get_best_config(algo_name):
         "learning_rate": 0.002,
         "weight_decay": 1e-5,
     }
+
+    best_configs["MSCRED"] = {
+        "num_epochs": 15,
+        "learning_rate": 0.0001,
+        "weight_decay": 1e-5,
+    }
     
     best_configs["LSTM_AD"] = {
-        "beta": 0.01,
-        "batch_size": 50,
-        "embedding_dim": 16,
         "num_epochs": 15,
-        "num_hidden": 32,
+        "num_hidden": 64,
         "learning_rate": 0.0001,
-        "layers": 3,
         "weight_decay": 1e-5,
     }
     
     best_configs["LSTM_Univariate"] = {
-        "beta": 0.01,
-        "batch_size": 50,
-        "embedding_dim": 16,
         "num_epochs": 15,
-        "num_hidden": 32,
+        "num_hidden": 1,
         "learning_rate": 0.0001,
-        "layers": 3,
         "weight_decay": 1e-5,
     }
 

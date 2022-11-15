@@ -23,7 +23,8 @@ parser = argparse.ArgumentParser(description="Flower")
 parser.add_argument(
     "--server_address",
     type=str,
-    required=True,
+    default="localhost:9090",
+    required=False,
     help=f"gRPC server address",
 )
 parser.add_argument(
@@ -106,71 +107,11 @@ def main() -> None:
     fl.common.logger.configure("server")
     
     best_configs = {}
-
-    best_configs["USAD"] = {
-        "num_epochs": 15,
-        "num_hidden": 16,
-        "latent": 5,
-        "learning_rate": 0.0001,
-        "weight_decay": 1e-5,
-        "num_window": 10,
-    }
     
     best_configs["AE"] = {
-        "num_epochs": 15,
         "learning_rate": 0.0001,
         "weight_decay": 1e-5,
         "num_window": 15,
-    }
-
-    best_configs["DAGMM"] = {
-        "beta": 0.01,
-        "embedding_dim": 16,
-        "num_epochs": 15,
-        "num_hidden": 16,
-        "latent": 8,
-        "learning_rate": 0.0001,
-        "weight_decay": 1e-5,
-        "num_window": 5,
-    }
-
-    best_configs["MAD_GAN"] = {
-        "num_epochs": 15,
-        "num_hidden": 16,
-        "learning_rate": 0.0001,
-        "weight_decay": 1e-5,
-        "num_window": 5,
-    }
-
-    best_configs["OmniAnomaly"] = {
-        "beta": 0.01,
-        "num_epochs": 15,
-        "num_hidden": 32,
-        "latent": 8,
-        "learning_rate": 0.002,
-        "weight_decay": 1e-5,
-    }
-    
-    best_configs["LSTM_AD"] = {
-        "beta": 0.01,
-        "batch_size": 50,
-        "embedding_dim": 16,
-        "num_epochs": 15,
-        "num_hidden": 32,
-        "learning_rate": 0.0001,
-        "layers": 3,
-        "weight_decay": 1e-5,
-    }
-    
-    best_configs["LSTM_Univariate"] = {
-        "beta": 0.01,
-        "batch_size": 50,
-        "embedding_dim": 16,
-        "num_epochs": 15,
-        "num_hidden": 32,
-        "learning_rate": 0.0001,
-        "layers": 3,
-        "weight_decay": 1e-5,
     }
 
     # Load evaluation data
@@ -186,8 +127,8 @@ def main() -> None:
     # Create client_manager, strategy, and server
     client_manager = fl.server.SimpleClientManager()
     strategy = SaveModelStrategy(
-        fraction_fit=0.5,
-        fraction_eval=0.5,
+        fraction_fit=1,
+        fraction_eval=1,
         min_fit_clients=args.min_sample_size,
         min_eval_clients=args.min_sample_size,
         min_available_clients=args.min_num_clients,
@@ -227,7 +168,7 @@ def fit_config(rnd: int) -> Dict[str, fl.common.Scalar]:
     """Return a configuration with static batch size and (local) epochs."""
     config = {
         "epoch_global": str(rnd),
-        "epochs": str(10),
+        "epochs": str(15),
         "num_workers": str(args.num_workers),
         "pin_memory": str(args.pin_memory),
         "model": args.model,

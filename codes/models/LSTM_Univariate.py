@@ -5,9 +5,9 @@ class LSTM_Univariate(nn.Module):
 	def __init__(self, feats, config):
 		super(LSTM_Univariate, self).__init__()
 		self.name = 'LSTM_Univariate'
-		self.lr = 0.001
+		self.lr = config['learning_rate']
 		self.n_feats = feats
-		self.n_hidden = 1
+		self.n_hidden = config['num_hidden']
 		self.lstm = nn.ModuleList([nn.LSTM(1, self.n_hidden) for i in range(feats)])
 
 	def forward(self, x):

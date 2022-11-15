@@ -46,7 +46,7 @@ def main():
     ## Prepare data
     trainD, testD = next(iter(train_loader)), next(iter(test_loader))
     trainO, testO = trainD, testD
-    if model.name in ['USAD', 'AE', 'DAGMM', 'MAD_GAN']:
+    if model.name in ['USAD', 'AE', 'DAGMM', 'MAD_GAN', 'MSCRED']:
         trainD, testD = convert_to_windows(trainD, model), convert_to_windows(testD, model)
     ### Training phase
     if not args.test:

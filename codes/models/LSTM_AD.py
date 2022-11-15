@@ -5,9 +5,9 @@ class LSTM_AD(nn.Module):
 	def __init__(self, feats, config):
 		super(LSTM_AD, self).__init__()
 		self.name = 'LSTM_AD'
-		self.lr = 0.002
+		self.lr = config['learning_rate']
 		self.n_feats = feats
-		self.n_hidden = 64
+		self.n_hidden = config['num_hidden']
 		self.lstm = nn.LSTM(feats, self.n_hidden)
 		self.lstm2 = nn.LSTM(feats, self.n_feats)
 		self.fcn = nn.Sequential(nn.Linear(self.n_feats, self.n_feats), nn.Sigmoid())

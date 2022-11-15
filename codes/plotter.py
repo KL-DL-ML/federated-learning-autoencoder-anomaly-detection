@@ -183,16 +183,37 @@ def anomaly(name, ascore, threshold):
         pdf.savefig(fig)
         plt.close()
     pdf.close()
+
+def anomaly(name, ascore, threshold):
+    os.makedirs(os.path.join('plots', name), exist_ok=True)
+    pdf = PdfPages(f'plots/{name}/anomaly.pdf')
+    for dim in range(ascore.shape[1]):
+        a_s = ascore[:, 0]
+        fig, ax = plt.subplots(1, 1, sharex=True)
+        ax.plot(a_s, linewidth=0.2, color='g')
+        ax.set_xlabel('Test Size')
+        ax.set_ylabel('Anomaly Score')
+        ax.axhline(threshold, linestyle='--', color='r')
+        ax.scatter(np.where(a_s > threshold)[0], a_s[a_s > threshold], color='r')
+        pdf.savefig(fig)
+        plt.close()
+    pdf.close()
     
  
 def anomalies(folder, name, ascore, threshold):
     os.makedirs(os.path.join('plots', folder), exist_ok=True)
     pdf = PdfPages(f'plots/{folder}/{name}.pdf')
     fig, ax = plt.subplots(1, 1, sharex=True)
-    ax.plot(ascore, linewidth=0.2, color='g')
+    ax.plot(ascore, linewidth=0.2, color='g', label='Anomaly Score')
     ax.set_xlabel('Test Size')
-    ax.set_ylabel('Anomaly Score')
+    ax.set_ylabel('Power')
     ax.axhline(threshold, linestyle='--', color='r')
+    ax.scatter(np.where(ascore > threshold)[0], ascore[ascore > threshold], color='r', label='Anomaly')
+    ax.legend(
+        loc='upper center',
+        bbox_to_anchor=(0.5, 1.2),
+        ncol=2,
+    )
     pdf.savefig(fig)
     plt.close()
     pdf.close()
