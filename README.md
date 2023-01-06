@@ -13,7 +13,7 @@ Preprocess any datasets using the command
 python3 preprocess.py ENERGY
 ```
 
-To use S-G filter on which dataset, using the command
+To use SG filter on dataset, using the command
 ```bash
 python3 preprocess.py ENERGY --filter
 ```
@@ -24,7 +24,7 @@ To run a model on a dataset, run the following command:
 ```bash
 python3 main.py --model <model> --dataset <dataset>
 ```
-where `<model>` can be either of 'AE', 'LSTM_AE', and dataset can be one of 'SWaT', and 'ENERGY (Energy Consumption Data)'. 
+where `<model>` can be either of 'AE', 'USAD', and dataset 'ENERGY (Energy Consumption Data)'. 
 
 To run a model on a filtered dataset, run the following command:
 ```bash
@@ -32,17 +32,45 @@ python3 main.py --model <model> --dataset <dataset> --filter
 ```
 It will produce error, if you don't have any filtered datasets.
 
-## Next Steps
-- Implement the Flower framework to make uses of the federated learning.
 
 # Federated Learning on Embedded Devices with Flower
 
 This code will show you how Flower makes it very easy to run Federated Learning workloads on edge devices.
 We'll try to implement federated learning in our anomaly detection methods on edge devices to capture any abnormal data from our sensor devices.
 
-## Getting things ready
+## Run the Federated Learning Server
 
-This is a list of components that you'll need: 
+To run the Federated Learning Server, using the command:
+```
+python3 fl_server.py --server_address localhost:11000 --model AE --dataset ENERGY &
+```
+- --server_address: specifies which server and port it runs on. E.g., localhost:110000
+- --model: specifies which model to use. E.g., AE
+- --dataset: specifies which dataset to test in this case we use ENERGY
 
-* For server: A machine running Linux/macOS.
-* For clients: either a Rapsberry Pi 3 B+ (RPi 4 would work too) or a Jetson Xavier-NX (or any other recent NVIDIA-Jetson device).
+After the FL server executed successfully, we can execute all clients to connect to server.
+
+## Run the Federated Learning Clients
+
+To run the Federated Learning Clients, using the command:
+```
+# Run Client 1
+python3 fl_client.py --server_address localhost:11000 --cid="dev1" --dataset ENERGY &
+
+# Run Client 2
+python3 fl_client.py --server_address localhost:11000 --cid="dev2" --dataset ENERGY &
+
+# Run Client 3
+python3 fl_client.py --server_address localhost:11000 --cid="dev3" --dataset ENERGY &
+
+# Run Client 4
+python3 fl_client.py --server_address localhost:11000 --cid="dev4" --dataset ENERGY &
+
+# Run Client 5
+python3 fl_client.py --server_address localhost:11000 --cid="dev5" --dataset ENERGY &
+
+# Run Client 6
+python3 fl_client.py --server_address localhost:11000 --cid="dev6" --dataset ENERGY &
+```
+
+After finished 20 rounds of training, the model file will be saved in checkpoints folder.We then can the that pre-trained model to evaluate its performance against the whole ENERGY dataset. The model performance result will be displayed in terminal console.
