@@ -1,5 +1,15 @@
-# Federated Deep Learning for Anomaly Detection
-Follow the below steps to setup and use the application.
+# FLAE: A Federated Learning AutoEncoder for Anomaly Detection in Distributed Power Systems
+
+This is the offical implementation of the paper:
+**FLAE: A Federated Learning AutoEncoder for Anomaly Detection in Distributed Power Systems (In Reviewing)**
+Kimleang Kea, Youngsun Han, Tae-Kyung Kim
+
+## Introduction
+Due to the increasing IoT device usage in power systems, collecting and analyzing data have been difficult in terms of time consumption and data privacy. As a result, we present the FLAE to address these issues. In particular, we adopt an AutoEncoder-based (AE) model to detect abnormalities in IoT data that run inside each IoT device. In addition, with the Federated Learning (FL) approach, we collect each IoT device's model parameters and aggregate them inside the Federated Learning server, without needing to share data, while preserving the data privacy for each device. Our system is conducted in a single-machine simulation that means both FL server and clients are running inside a single machine. We hope FLAE could provide an efficient meaning for future development of Federated Learning.
+
+<div align="center">
+ <img src="docs/fl_arch.png" width="600px">
+</div>
 
 ## Installation
 This code needs Python-3.7 or higher.
@@ -19,12 +29,12 @@ python3 preprocess.py ENERGY --filter
 ```
 This will create another folder inside your dataset name called filtered.
 
-## Result Reproduction
+## Centralized Learning
 To run a model on a dataset, run the following command:
 ```bash
 python3 main.py --model <model> --dataset <dataset>
 ```
-where `<model>` can be either of 'AE', 'USAD', etc, and dataset 'ENERGY (Energy Consumption Data)'. 
+where `<model>` can be either of 'AE', 'DAGMM', 'MAD_GAN', 'MSCRED', 'OmniAnomaly', 'USAD', and dataset 'ENERGY (Energy Consumption Data)'.
 
 To run a model on a filtered dataset, run the following command:
 ```bash

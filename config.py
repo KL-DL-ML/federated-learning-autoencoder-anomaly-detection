@@ -52,19 +52,5 @@ def get_best_config(algo_name):
         "learning_rate": 0.0001,
         "weight_decay": 1e-5,
     }
-    
-    best_configs["LSTM_AD"] = {
-        "num_epochs": 15,
-        "num_hidden": 64,
-        "learning_rate": 0.0001,
-        "weight_decay": 1e-5,
-    }
-    
-    best_configs["LSTM_Univariate"] = {
-        "num_epochs": 15,
-        "num_hidden": 1,
-        "learning_rate": 0.0001,
-        "weight_decay": 1e-5,
-    }
 
     return best_configs[algo_name]
