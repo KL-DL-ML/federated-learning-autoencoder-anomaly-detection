@@ -1,4 +1,4 @@
-# Federated Deep Learning for Anomaly Detection in Multivariate Time Series Data
+# Federated Deep Learning for Anomaly Detection
 Follow the below steps to setup and use the application.
 
 ## Installation
@@ -24,7 +24,7 @@ To run a model on a dataset, run the following command:
 ```bash
 python3 main.py --model <model> --dataset <dataset>
 ```
-where `<model>` can be either of 'AE', 'USAD', and dataset 'ENERGY (Energy Consumption Data)'. 
+where `<model>` can be either of 'AE', 'USAD', etc, and dataset 'ENERGY (Energy Consumption Data)'. 
 
 To run a model on a filtered dataset, run the following command:
 ```bash
@@ -44,13 +44,15 @@ To run the Federated Learning Server, using the command:
 ```
 python3 fl_server.py --server_address localhost:11000 --model AE --dataset ENERGY &
 ```
-- --server_address: specifies which server and port it runs on. E.g., localhost:110000
+- --server_address: specifies which server and port it runs on. E.g., localhost:11000
 - --model: specifies which model to use. E.g., AE
 - --dataset: specifies which dataset to test in this case we use ENERGY
 
 After the FL server executed successfully, we can execute all clients to connect to server.
 
 ## Run the Federated Learning Clients
+
+Before run the Federated Learning Clients, we must preprocess all of the data for each client. To do that, run the code in Jupyter Notebook which is called `client_preprocess.ipynb`.
 
 To run the Federated Learning Clients, using the command:
 ```
@@ -73,4 +75,4 @@ python3 fl_client.py --server_address localhost:11000 --cid="dev5" --dataset ENE
 python3 fl_client.py --server_address localhost:11000 --cid="dev6" --dataset ENERGY &
 ```
 
-After finished 20 rounds of training, the model file will be saved in checkpoints folder.We then can the that pre-trained model to evaluate its performance against the whole ENERGY dataset. The model performance result will be displayed in terminal console.
+After finished 20 rounds of training, the model file will be saved in checkpoints folder. We then can use that pre-trained model to evaluate its performance against the whole ENERGY dataset. The model performance result will be displayed in terminal console.
