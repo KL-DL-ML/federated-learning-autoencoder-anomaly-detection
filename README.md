@@ -1,7 +1,7 @@
 # FLAE: A Federated Learning AutoEncoder for Anomaly Detection in Distributed Power Systems
 
-This is the offical implementation of the paper:
-**FLAE: A Federated Learning AutoEncoder for Anomaly Detection in Distributed Power Systems (In Reviewing)**
+This is the offical implementation of the paper: \
+**FLAE: A Federated Learning AutoEncoder for Anomaly Detection in Distributed Power Systems (In Reviewing)** \
 Kimleang Kea, Youngsun Han, Tae-Kyung Kim
 
 ## Introduction
@@ -43,12 +43,12 @@ python3 main.py --model <model> --dataset <dataset> --filter
 It will produce error, if you don't have any filtered datasets.
 
 
-# Federated Learning on Embedded Devices with Flower
+## Federated Learning
 
-This code will show you how Flower makes it very easy to run Federated Learning workloads on edge devices.
-We'll try to implement federated learning in our anomaly detection methods on edge devices to capture any abnormal data from our sensor devices.
+This code will show you how Flower makes it very easy to run Federated Learning workloads.
+We simulated the Federated Learning both server and clients on a single machine.
 
-## Run the Federated Learning Server
+### Run the Federated Learning Server
 
 To run the Federated Learning Server, using the command:
 ```
@@ -60,7 +60,7 @@ python3 fl_server.py --server_address localhost:11000 --model AE --dataset ENERG
 
 After the FL server executed successfully, we can execute all clients to connect to server.
 
-## Run the Federated Learning Clients
+### Run the Federated Learning Clients
 
 Before run the Federated Learning Clients, we must preprocess all of the data for each client. To do that, run the code in Jupyter Notebook which is called `client_preprocess.ipynb`.
 
