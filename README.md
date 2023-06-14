@@ -86,3 +86,7 @@ python3 fl_client.py --server_address localhost:11000 --cid="dev6" --dataset ENE
 ```
 
 After finished 20 rounds of training, the model file will be saved in checkpoints folder. We then can use that pre-trained model to evaluate its performance against the whole ENERGY dataset. The model performance result will be displayed in terminal console.
+
+
+### DOI
+[![DOI](https://zenodo.org/badge/515439963.svg)](https://zenodo.org/badge/latestdoi/515439963)
