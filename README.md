@@ -1,4 +1,4 @@
-# FLAE: A Federated Learning AutoEncoder for Anomaly Detection in Distributed Power Systems
+# Enhancing Anomaly Detection in Distributed Power Systems using Autoencoder-based Federated Learning
 
 This is the offical implementation of the paper: \
 **Enhancing Anomaly Detection in Distributed Power Systems using Autoencoder-based Federated Learning (In Reviewing)** \
