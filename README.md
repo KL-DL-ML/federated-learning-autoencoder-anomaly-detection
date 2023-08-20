@@ -1,7 +1,7 @@
 # Enhancing Anomaly Detection in Distributed Power Systems using Autoencoder-based Federated Learning
 
 This is the offical implementation of the paper: \
-**Enhancing Anomaly Detection in Distributed Power Systems using Autoencoder-based Federated Learning (In Reviewing)** \
+**Enhancing Anomaly Detection in Distributed Power Systems using Autoencoder-based Federated Learning (Accepted and Published)** \
 Kimleang Kea, Youngsun Han, Tae-Kyung Kim
 
 ## Introduction
@@ -87,6 +87,19 @@ python3 fl_client.py --server_address localhost:11000 --cid="dev6" --dataset ENE
 
 After finished 20 rounds of training, the model file will be saved in checkpoints folder. We then can use that pre-trained model to evaluate its performance against the whole ENERGY dataset. The model performance result will be displayed in terminal console.
 
-
-### DOI
-[![DOI](https://zenodo.org/badge/515439963.svg)](https://zenodo.org/badge/latestdoi/515439963)
+## Citation
+```
+@article{10.1371/journal.pone.0290337,
+    doi = {10.1371/journal.pone.0290337},
+    author = {Kea, Kimleang AND Han, Youngsun AND Kim, Tae-Kyung},
+    journal = {PLOS ONE},
+    publisher = {Public Library of Science},
+    title = {Enhancing anomaly detection in distributed power systems using autoencoder-based federated learning},
+    year = {2023},
+    month = {08},
+    volume = {18},
+    url = {https://doi.org/10.1371/journal.pone.0290337},
+    pages = {1-18},
+    number = {8},
+}
+```
